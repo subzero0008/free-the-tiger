@@ -43,7 +43,7 @@ npm run dev
 Open the provided local URL (usually http://localhost:5173) in your browser.
 Important: Press F12 or right-click and select "Inspect" to open the Browser Console and see the secret code!
 
-##  Features & Bonus Points
+##  How to play?
 Open the Browser Console.
 
 Look for a pink message looking like this: 🔒  CODE: 3, 1, 5, 2, 6, 4.
