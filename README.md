@@ -8,10 +8,9 @@ The game starts with a locked cage. Six bars keep the tiger inside—three on th
 - **Wrong click:** All opened bars slam shut, a new code is generated, and the player must start over.
 - **Victory:** Open all 6 bars in the correct order to free the tiger. The "Going Wild!" text appears, and after a few seconds, the game resets.
  Screenshots
-
 | Gameplay (Locked Cage) | Victory (Going Wild!) |
 | :---: | :---: |
-| ![Gameplay](https://i.imgur.com/3W4Izrh.jpeg) [Victory](https://i.imgur.com/WT2UWan.jpeg) |
+| ![Gameplay](https://i.imgur.com/3W4Izrh.jpeg) | ![Victory](https://i.imgur.com/WT2UWan.jpeg) |
 
 ## Technologies Used
 - **TypeScript** - For strict typing and Object-Oriented architecture.
