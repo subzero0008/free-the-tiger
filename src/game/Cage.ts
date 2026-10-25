@@ -13,9 +13,12 @@ export class Cage {
   public container: Container;
   public bars: Bar[] = [];
   
-  private tigerSprite: Sprite;
-  private cageSprite: Sprite;
-  private goingWildSprite: Sprite;
+  // The `!` (definite assignment assertion) tells TypeScript that these properties
+  // are guaranteed to be initialized in the `build()` method called from the constructor.
+  private tigerSprite!: Sprite;
+  private cageSprite!: Sprite;
+  private goingWildSprite!: Sprite;
+
   constructor() {
     this.container = new Container();
     this.container.sortableChildren = true;
