@@ -2,152 +2,135 @@ import { Container, Sprite, Text, Assets, Rectangle } from 'pixi.js';
 import gsap from 'gsap';
 import { CONFIG } from '../config';
 
-// CLICK AREA SETTINGS
-
-// Bars 1, 2, 3 — left side
-const LEFT_HIT_AREA = {
-  x: 0,       // Horizontal position of the area
-  y: -50,     // Vertical position of the area
-  width: 400, // Width of the area
-  height: 100 // Height of the area
-};
-
-// Bars 4, 5, 6 — right side
-const RIGHT_HIT_AREA = {
-  x: -20,     // Horizontal position of the area
-  y: -50,     // Vertical position of the area
-  width: 400, // Width of the area
-  height: 100 // Height of the area
-};
-
+/**
+ * Bar represents a single cage bar (there are 6 in total).
+ * Each bar handles its own visual representation, click area, and animations.
+ * 
+ * Bars 1, 2, 3 are on the left side and slide out to the left.
+ * Bars 4, 5, 6 are on the right side and slide out to the right.
+ */
 export class Bar extends Container {
+  // Unique identifier of the bar (1-6)
   public id: number;
+  
+  // Tracks whether the bar is currently open (slid out) or closed
   public isOpen: boolean = false;
 
+  // X-coordinate when the bar is in its closed (locked) position
   private closedX: number;
+  
+  // X-coordinate when the bar is fully open (slid out)
   private openX: number;
 
   constructor(id: number, isLeft: boolean, rowIndex: number) {
     super();
     this.id = id;
 
-    // 1. BAR POSITIONS
-    this.closedX = isLeft
-      ? CONFIG.BARS.LEFT_X
-      : CONFIG.BARS.RIGHT_X;
+    // 1. CALCULATE BAR POSITIONS
+    // Determine the closed position based on which side the bar is on
+    this.closedX = isLeft ? CONFIG.BARS.LEFT_X : CONFIG.BARS.RIGHT_X;
+    
+    // The open position is offset outward from the closed position
+    // Left bars slide left (negative offset), right bars slide right (positive offset)
+    this.openX = this.closedX + (isLeft ? -CONFIG.BARS.OPEN_OFFSET : CONFIG.BARS.OPEN_OFFSET);
 
-    this.openX =
-      this.closedX +
-      (isLeft
-        ? -CONFIG.BARS.OPEN_OFFSET
-        : CONFIG.BARS.OPEN_OFFSET);
-
-    // 2. CREATE SPRITES
+    // 
+    // 2. CREATE BAR AND SHADOW SPRITES
+    // 
     const shadow = new Sprite(Assets.get(CONFIG.ASSETS.SHADOW));
     const barSprite = new Sprite(Assets.get(CONFIG.ASSETS.BAR));
-
     const s = CONFIG.BARS.SCALE;
 
-    // Sprites should not intercept clicks
+    // Disable event mode so sprites don't intercept click events 
+    // (only the container's hitArea should handle clicks)
     shadow.eventMode = 'none';
     barSprite.eventMode = 'none';
 
-    // 3. VISUAL SETUP FOR BAR AND SHADOW
+    // 3. VISUAL SETUP - MIRROR RIGHT BARS
     if (isLeft) {
-      // Bars 1, 2, 3
+      // LEFT BARS (1, 2, 3)
+      // Anchor at the left edge, extend to the right
       shadow.anchor.set(0, 0.5);
       shadow.scale.set(s, s);
-      shadow.x = 10;
-      shadow.y = 10;
-
+      shadow.x = CONFIG.BARS.SHADOW_OFFSET_X;
+      shadow.y = CONFIG.BARS.SHADOW_OFFSET_Y;
+      
       barSprite.anchor.set(0, 0.5);
       barSprite.scale.set(s, s);
     } else {
-      // Bars 4, 5, 6
+      // RIGHT BARS (4, 5, 6)
+      // Flip horizontally (negative scale) so the bar extends to the left
       shadow.anchor.set(1, 0.5);
       shadow.scale.set(-s, s);
-      shadow.x = -10;
-      shadow.y = 10;
-
+      shadow.x = -CONFIG.BARS.SHADOW_OFFSET_X;
+      shadow.y = CONFIG.BARS.SHADOW_OFFSET_Y;
+      
       barSprite.anchor.set(1, 0.5);
       barSprite.scale.set(-s, s);
     }
 
-    // 4. TEXT AND NUMBERING
+    // 4. CREATE NUMBER LABEL
     const text = new Text({
       text: id.toString(),
-      style: {
-        fontFamily: 'Impact, Arial Black, sans-serif',
-        fontSize: 48,
-        fill: 0xFFFFFF,
-        fontWeight: 'bold',
-        stroke: {
-          color: 0x000000,
-          width: 8
-        },
-        dropShadow: {
-          color: 0x000000,
-          blur: 4,
-          distance: 4,
-          angle: Math.PI / 2,
-          alpha: 0.8
-        }
-      }
+      style: CONFIG.BARS.TEXT_STYLE
     });
-
+    
     text.anchor.set(0.5);
     text.eventMode = 'none';
-
-    if (isLeft) {
-      text.x = CONFIG.BARS.TEXT_OFFSET_LEFT;
-    } else {
-      text.x = CONFIG.BARS.TEXT_OFFSET_RIGHT;
-    }
-
+    
+    // Position the number label at a fixed offset on the bar
+    text.x = isLeft ? CONFIG.BARS.TEXT_OFFSET_LEFT : CONFIG.BARS.TEXT_OFFSET_RIGHT;
     text.y = 0;
 
+    // Add all visual elements to the container
     this.addChild(shadow, barSprite, text);
 
-    // 5. POSITION OF THE ENTIRE BAR
+    // 5. POSITION THE ENTIRE BAR CONTAINER
     this.x = this.closedX;
     this.y = CONFIG.BARS.Y_POSITIONS[rowIndex];
+    this.zIndex = CONFIG.BARS.Z_INDEX;
 
-    // 6. SEPARATE CLICK AREA
+    
+    // 6. SETUP CLICKABLE HIT AREA
+    
     this.eventMode = 'static';
     this.cursor = 'pointer';
 
-    // Select a specific click area based on the side
-    const hitAreaConfig = isLeft
-      ? LEFT_HIT_AREA
-      : RIGHT_HIT_AREA;
-
+    // Use different hit areas for left and right bars to match their visual bounds
+    const hitAreaConfig = isLeft ? CONFIG.BARS.HIT_AREA_LEFT : CONFIG.BARS.HIT_AREA_RIGHT;
     this.hitArea = new Rectangle(
-      hitAreaConfig.x,
-      hitAreaConfig.y,
-      hitAreaConfig.width,
+      hitAreaConfig.x, 
+      hitAreaConfig.y, 
+      hitAreaConfig.width, 
       hitAreaConfig.height
     );
   }
 
-  // 7. OPEN THE BAR
+  
+  // 7. OPEN THE BAR (Slide Out)
+  
   public async open(): Promise<void> {
     this.isOpen = true;
-
-    await gsap.to(this, {
-      x: this.openX,
-      duration: 0.5,
-      ease: 'back.out(1.2)'
+    this.cursor = 'default'; // Bar is no longer clickable once opened
+    
+    await gsap.to(this, { 
+      x: this.openX, 
+      duration: CONFIG.ANIMATION.BAR_OPEN_DURATION, 
+      ease: CONFIG.ANIMATION.BAR_OPEN_EASE 
     });
   }
 
-  // 8. SLAM SHUT THE BAR
-  public async slamShut(): Promise<void> {
-    await gsap.to(this, {
-      x: this.closedX,
-      duration: 0.2,
-      ease: 'power2.in'
-    });
+ 
+  // 8. SLAM SHUT THE BAR (Used on wrong click and on reset)
 
+  public async slamShut(): Promise<void> {
+    await gsap.to(this, { 
+      x: this.closedX, 
+      duration: CONFIG.ANIMATION.BAR_CLOSE_DURATION, 
+      ease: CONFIG.ANIMATION.BAR_CLOSE_EASE 
+    });
+    
     this.isOpen = false;
+    this.cursor = 'pointer'; // Restore interactivity
   }
 }
