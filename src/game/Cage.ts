@@ -16,7 +16,6 @@ export class Cage {
   private tigerSprite: Sprite;
   private cageSprite: Sprite;
   private goingWildSprite: Sprite;
-
   constructor() {
     this.container = new Container();
     this.container.sortableChildren = true;
