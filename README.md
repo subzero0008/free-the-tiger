@@ -11,7 +11,7 @@ The game starts with a locked cage. Six bars keep the tiger inside—three on th
 
 | Gameplay (Locked Cage) | Victory (Going Wild!) |
 | :---: | :---: |
-| ![Gameplay](https://i.imgur.com/3W4Izrh.jpeg) | ![Victory](https://i.imgur.com/f4OFdRk.jpeg) |
+| ![Gameplay](https://i.imgur.com/3W4Izrh.jpeg) | ![Victory](https://imgur.com/WT2UWan) |
 
 ## Technologies Used
 - **TypeScript** - For strict typing and Object-Oriented architecture.
