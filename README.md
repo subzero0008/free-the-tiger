@@ -1,7 +1,7 @@
 # Free the Tiger 🐯
 
 A mini-game developed as part of a Frontend Game Developer challenge. The goal is simple: open the cage and let the tiger out!
-LIVE https://freethetiger.netlify.app/
+# LIVE https://freethetiger.netlify.app/
 
 ##  About the Task
 The game starts with a locked cage. Six bars keep the tiger inside—three on the left and three on the right. A random code is generated and logged in the browser console. The player must click the bars in the exact order of the code. 
