@@ -89,6 +89,9 @@ export const CONFIG = {
     // Determines how much to zoom in the game on mobile (lower number = more zoom)
     SCALE_DIVISOR: 1300,
     
+    // Maximum height of the game elements in portrait mode (prevents cropping on tall screens)
+    MAX_HEIGHT: 1600,
+    
     // Vertical offset to balance the scene on portrait screens
     ROOT_Y_OFFSET: 30,
     
