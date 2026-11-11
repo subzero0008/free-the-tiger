@@ -92,30 +92,28 @@ class Slider extends Container {
 
 export class SettingsMenu extends Container {
   private audioManager: AudioManager;
-  private gearButton: Container;
-  private modalOverlay: Container;
-  private modalWindow: Container;
   private app: Application;
+  
+  // FIX: Add `!` to fix TypeScript strict mode errors
+  private gearButton!: Container;
+  private modalOverlay!: Container;
+  private modalWindow!: Container;
   
   private musicSlider!: Slider;
   private sfxSlider!: Slider;
   private musicMuteBtn!: Container;
   private sfxMuteBtn!: Container;
 
-  // NEW: Prevent onChange during initialization
   private isInitializing = false;
-
-  // NEW: Callbacks for pause/resume game timer
+  
   public onOpen: () => void = () => {};
   public onClose: () => void = () => {};
 
-  // Temp state
   private tempMusicVol = 0.5;
   private tempSfxVol = 0.5;
   private tempMusicMute = false;
   private tempSfxMute = false;
 
-  // Original state
   private origMusicVol = 0.5;
   private origSfxVol = 0.5;
   private origMusicMute = false;
@@ -183,7 +181,6 @@ export class SettingsMenu extends Container {
     
     this.modalWindow.addChild(windowBg, innerBg, title);
 
-    // ===== MUSIC SLIDER =====
     const mLabel = new Text({ text: 'Music', style: { fontFamily: 'Arial', fontSize: 24, fill: 0xFFFFFF, fontWeight: 'bold' } });
     mLabel.anchor.set(0, 0.5);
     mLabel.position.set(-250, -80);
@@ -192,7 +189,6 @@ export class SettingsMenu extends Container {
     this.musicSlider = new Slider(this.app);
     this.musicSlider.position.set(-60, -80);
     this.musicSlider.onChange = (val) => {
-      // FIX: Skip logic during initialization
       if (this.isInitializing) return;
       
       this.tempMusicVol = val;
@@ -219,7 +215,6 @@ export class SettingsMenu extends Container {
     });
     this.modalWindow.addChild(this.musicMuteBtn);
 
-    // ===== SFX SLIDER =====
     const sLabel = new Text({ text: 'SFX', style: { fontFamily: 'Arial', fontSize: 24, fill: 0xFFFFFF, fontWeight: 'bold' } });
     sLabel.anchor.set(0, 0.5);
     sLabel.position.set(-250, 0);
@@ -228,7 +223,6 @@ export class SettingsMenu extends Container {
     this.sfxSlider = new Slider(this.app);
     this.sfxSlider.position.set(-60, 0);
     this.sfxSlider.onChange = (val) => {
-      // FIX: Skip logic during initialization
       if (this.isInitializing) return;
       
       this.tempSfxVol = val;
@@ -264,7 +258,6 @@ export class SettingsMenu extends Container {
     });
     this.modalWindow.addChild(this.sfxMuteBtn);
 
-    // ===== BUTTONS =====
     const btnCancel = this.createButton('CANCEL', -150, 150, 0xFF3333, () => this.cancel());
     const btnOk = this.createButton('OK', 150, 150, 0x00FF00, () => this.saveAndClose());
     
@@ -325,19 +318,16 @@ export class SettingsMenu extends Container {
     this.isOpen = true;
     this.modalOverlay.visible = true;
     
-    // Save ORIGINAL state
     this.origMusicVol = this.audioManager.getMusicVolume();
     this.origSfxVol = this.audioManager.getSfxVolume();
     this.origMusicMute = this.audioManager.getIsMusicMuted();
     this.origSfxMute = this.audioManager.getIsSfxMuted();
 
-    // Load into temp
     this.tempMusicVol = this.origMusicVol;
     this.tempSfxVol = this.origSfxVol;
     this.tempMusicMute = this.origMusicMute;
     this.tempSfxMute = this.origSfxMute;
 
-    // FIX: Block onChange logic while loading initial values
     this.isInitializing = true;
     this.musicSlider.setValue(this.tempMusicVol);
     this.sfxSlider.setValue(this.tempSfxVol);
@@ -346,7 +336,6 @@ export class SettingsMenu extends Container {
     this.updateMuteButtonVisuals();
     this.repositionModal();
 
-    // FIX: Pause game (timer, etc.)
     this.onOpen();
 
     this.modalWindow.scale.set(0.8);
@@ -361,7 +350,6 @@ export class SettingsMenu extends Container {
   public cancel() {
     if (!this.isOpen) return;
     
-    // REVERT to original state
     this.audioManager.setLiveMusicVolume(this.origMusicVol);
     this.audioManager.setLiveSfxVolume(this.origSfxVol);
     this.audioManager.setLiveMusicMute(this.origMusicMute);
@@ -379,7 +367,6 @@ export class SettingsMenu extends Container {
       this.modalOverlay.visible = false;
       this.gearButton.visible = true;
       
-      // FIX: Resume game (timer, etc.)
       this.onClose();
     }});
   }

@@ -7,9 +7,12 @@ import { wait } from '../utils/wait';
 export class Cage {
   public container: Container;
   public bars: Bar[] = [];
-  public tigerSprite: Sprite;
-  private cageSprite: Sprite;
-  private goingWildSprite: Sprite;
+  
+  // FIX: Add `!` (definite assignment assertion) to fix TypeScript strict mode errors
+  public tigerSprite!: Sprite;
+  private cageSprite!: Sprite;
+  private goingWildSprite!: Sprite;
+  
   private baseTigerY: number = CONFIG.LAYOUT.TIGER.Y;
 
   constructor() {
@@ -74,7 +77,6 @@ export class Cage {
     }
   }
 
-  // FIX: Принудително нулиране на всичко
   public reset(): void {
     gsap.killTweensOf(this.tigerSprite);
     gsap.killTweensOf(this.goingWildSprite);
@@ -85,7 +87,6 @@ export class Cage {
     
     this.goingWildSprite.scale.set(0);
 
-    // Принудително затваряме баровете
     this.bars.forEach(bar => {
       gsap.killTweensOf(bar);
       bar.x = (bar.id <= 3) ? CONFIG.BARS.LEFT_X : CONFIG.BARS.RIGHT_X;
