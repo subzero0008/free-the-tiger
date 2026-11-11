@@ -13,7 +13,8 @@ export class VictoryScreen extends Container {
     bestTimeStr: string, 
     isNewRecord: boolean,
     hintsUsed: number,
-    onPlayAgain: () => void
+    onPlayAgain: () => void,
+    onLeaderboard: () => void  // NEW
   ) {
     super();
     
@@ -145,7 +146,7 @@ export class VictoryScreen extends Container {
       }
     });
     demoText.anchor.set(0.5);
-    demoText.y = 200;
+    demoText.y = 190;
     demoText.zIndex = 10;
     this.addChild(demoText);
 
@@ -160,13 +161,13 @@ export class VictoryScreen extends Container {
       }
     });
     creatorText.anchor.set(0.5);
-    creatorText.y = 255;
+    creatorText.y = 240;
     creatorText.zIndex = 10;
     this.addChild(creatorText);
 
     // CLICKABLE EMAIL
     const emailContainer = new Container();
-    emailContainer.y = 285;
+    emailContainer.y = 270;
     emailContainer.zIndex = 10;
     this.addChild(emailContainer);
 
@@ -206,9 +207,14 @@ export class VictoryScreen extends Container {
     emailLabel.x = -totalWidth / 2;
     emailLink.x = emailLabel.x + emailLabel.width;
 
-    const button = this.createButton(CONFIG.VICTORY.PLAY_AGAIN, 0, 370, onPlayAgain);
-    button.zIndex = 20;
-    this.addChild(button);
+    // TWO BUTTONS: Play Again + Leaderboard
+    const btnPlayAgain = this.createButton(CONFIG.VICTORY.PLAY_AGAIN, -200, 360, 0x00AEEF, onPlayAgain);
+    btnPlayAgain.zIndex = 20;
+    this.addChild(btnPlayAgain);
+
+    const btnLeaderboard = this.createButton('🏆 LEADERBOARD', 200, 360, 0xFFD700, onLeaderboard);
+    btnLeaderboard.zIndex = 20;
+    this.addChild(btnLeaderboard);
   }
 
   private createConfetti() {
@@ -232,13 +238,14 @@ export class VictoryScreen extends Container {
     }
   }
 
-  private createButton(label: string, x: number, y: number, onClick: () => void): Container {
+  // NEW: createButton accepts color parameter
+  private createButton(label: string, x: number, y: number, color: number, onClick: () => void): Container {
     const btn = new Container();
     const bg = new Graphics();
-    bg.roundRect(-220, -55, 440, 110, 20).fill(0x00AEEF).stroke({ color: 0x000000, width: 5 });
+    bg.roundRect(-180, -50, 360, 100, 20).fill(color).stroke({ color: 0x000000, width: 5 });
     const text = new Text({
       text: label,
-      style: { fontFamily: 'Arial, sans-serif', fontSize: 44, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 4 } }
+      style: { fontFamily: 'Arial, sans-serif', fontSize: 32, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 4 } }
     });
     text.anchor.set(0.5);
     btn.addChild(bg, text);
@@ -247,7 +254,7 @@ export class VictoryScreen extends Container {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
     btn.on('pointerdown', onClick);
-    btn.on('pointerover', () => { bg.tint = 0x88DDFF; });
+    btn.on('pointerover', () => { bg.tint = 0xCCCCCC; });
     btn.on('pointerout', () => { bg.tint = 0xFFFFFF; });
     return btn;
   }
@@ -257,7 +264,6 @@ export class VictoryScreen extends Container {
     this.bg.rect(-width / 2, -height / 2, width, height).fill({ color: 0x000000, alpha: 0.85 });
   }
 
-  // FIX: Kill ALL infinite tweens before destruction
   public destroy(options?: any): void {
     if (this.confettiLayer) gsap.killTweensOf(this.confettiLayer.children);
     if (this.title) gsap.killTweensOf(this.title.scale);

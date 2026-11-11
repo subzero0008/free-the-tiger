@@ -6,11 +6,13 @@ import { PipManager } from './PipManager';
 import { HintBubble } from './HintBubble';
 import { PuzzleDisplay } from './PuzzleDisplay';
 import { IntroScreen } from './IntroScreen';
+import { NicknameScreen } from './NicknameScreen';
 import { LevelIntro } from './LevelIntro';
 import { VictoryScreen } from './VictoryScreen';
 import { GameOverScreen } from './GameOverScreen';
 import { QuitPromptScreen } from './QuitPromptScreen';
 import { HintPromptScreen } from './HintPromptScreen';
+import { LeaderboardScreen } from './LeaderboardScreen';
 import { wait } from '../utils/wait';
 import { Bar } from './Bar';
 import { generateLevel1Sequence, type FlashStep } from './Level1Puzzles';
@@ -18,6 +20,7 @@ import { generateLevel2Puzzle, type ImpostorPuzzle } from './Level2Puzzles';
 import { generateLevel3Puzzles, type MathPuzzle } from './Level3Puzzles';
 import { AudioManager } from './AudioManager';
 import { SettingsMenu } from './SettingsMenu';
+import { supabase } from '../utils/supabase';
 
 const GameState = {
   SCREENS: 'SCREENS',
@@ -45,11 +48,13 @@ export class Game {
   private puzzleDisplay: PuzzleDisplay;
 
   private introScreen: IntroScreen | null = null;
+  private nicknameScreen: NicknameScreen | null = null;
   private levelIntro: LevelIntro | null = null;
   private victoryScreen: VictoryScreen | null = null;
   private gameOverScreen: GameOverScreen | null = null;
   private quitPromptScreen: QuitPromptScreen | null = null;
   private hintPromptScreen: HintPromptScreen | null = null;
+  private leaderboardScreen: LeaderboardScreen | null = null;
 
   private levelText: Text;
   private timerText: Text;
@@ -71,10 +76,12 @@ export class Game {
   private hintsRemaining = 3;
   private totalHintsUsed = 0;
 
-  // TIMER STATE (with pause support)
+  private playerName: string = '';
+
+  // TIMER STATE
   private runStartTime = 0;
   private runEndTime = 0;
-  private pausedTime = 0;    // Accumulated elapsed time before pause
+  private pausedTime = 0;
   private isTimerRunning = false;
 
   constructor(app: Application) {
@@ -82,10 +89,12 @@ export class Game {
     this.root = new Container();
     this.root.sortableChildren = true;
 
+    // Cleanup old broken localStorage key (from buggy v1)
+    localStorage.removeItem('freeTheTigerBestTime');
+
     this.audioManager = AudioManager.getInstance();
     this.settingsMenu = new SettingsMenu(this.app);
 
-    // Connect settings menu pause/resume to game timer
     this.settingsMenu.onOpen = () => this.pauseTimer();
     this.settingsMenu.onClose = () => this.resumeTimer();
 
@@ -97,7 +106,7 @@ export class Game {
 
     this.uiLayer = new Container();
     this.app.stage.addChild(this.uiLayer);
-    
+
     this.app.stage.addChild(this.settingsMenu);
 
     this.cageObj = new Cage();
@@ -116,11 +125,11 @@ export class Game {
     this.root.addChild(this.puzzleDisplay);
     this.root.addChild(this.hintBubble.container);
 
-        this.signature = new Text({
+    this.signature = new Text({
       text: '© Yulian Yuriev',
       style: { fontFamily: 'Arial, sans-serif', fontSize: CONFIG.LAYOUT.SIGNATURE.FONT_SIZE, fill: 0xFFFFFF, fontWeight: 'normal' }
     });
-    this.signature.anchor.set(0, 1); // <--- ПРОМЯНА: 0 вместо 1
+    this.signature.anchor.set(0, 1);
     this.app.stage.addChild(this.signature);
 
     this.levelText = new Text({
@@ -188,23 +197,20 @@ export class Game {
   }
 
   private stopTimer() {
+    this.runEndTime = this.getElapsedTime(); 
     this.isTimerRunning = false;
-    this.runEndTime = this.getElapsedTime();
+    console.log(`⏱️ Timer stopped at: ${this.runEndTime}ms (${this.formatTime(this.runEndTime)})`);
   }
 
-  // NEW: Pause the timer (called when settings modal opens)
   private pauseTimer() {
     if (!this.isTimerRunning) return;
     this.pausedTime += performance.now() - this.runStartTime;
     this.isTimerRunning = false;
   }
 
-  // NEW: Resume the timer (called when settings modal closes)
   private resumeTimer() {
-    // Only resume if timer was running before pause AND game hasn't ended
     if (this.currentState === GameState.SCREENS || this.currentState === GameState.WIN) return;
     if (this.isTimerRunning) return;
-    
     this.runStartTime = performance.now();
     this.isTimerRunning = true;
   }
@@ -224,11 +230,13 @@ export class Game {
     this.killTweensRecursive(this.uiLayer);
 
     if (this.introScreen) { this.uiLayer.removeChild(this.introScreen); this.introScreen.destroy({ children: true }); this.introScreen = null; }
+    if (this.nicknameScreen) { this.uiLayer.removeChild(this.nicknameScreen); this.nicknameScreen.destroy({ children: true }); this.nicknameScreen = null; }
     if (this.levelIntro) { this.uiLayer.removeChild(this.levelIntro); this.levelIntro.destroy({ children: true }); this.levelIntro = null; }
     if (this.victoryScreen) { this.uiLayer.removeChild(this.victoryScreen); this.victoryScreen.destroy({ children: true }); this.victoryScreen = null; }
     if (this.gameOverScreen) { this.uiLayer.removeChild(this.gameOverScreen); this.gameOverScreen.destroy({ children: true }); this.gameOverScreen = null; }
     if (this.quitPromptScreen) { this.uiLayer.removeChild(this.quitPromptScreen); this.quitPromptScreen.destroy({ children: true }); this.quitPromptScreen = null; }
     if (this.hintPromptScreen) { this.uiLayer.removeChild(this.hintPromptScreen); this.hintPromptScreen.destroy({ children: true }); this.hintPromptScreen = null; }
+    if (this.leaderboardScreen) { this.uiLayer.removeChild(this.leaderboardScreen); this.leaderboardScreen.destroy({ children: true }); this.leaderboardScreen = null; }
   }
 
   private resetLevelState() {
@@ -253,18 +261,48 @@ export class Game {
     this.totalHintsUsed = 0;
   }
 
+  // ========================================
+  // INTRO & NICKNAME
+  // ========================================
+
   private showIntro() {
     this.currentState = GameState.SCREENS;
     this.sessionId++;
     this.isAnimating = false;
     this.clearScreens();
     this.resetFullGame();
+    this.playerName = '';
 
     this.audioManager.stopAllMusic();
     this.audioManager.startRandomBgm();
 
-    this.introScreen = new IntroScreen(() => this.showLevel1Intro());
+    this.introScreen = new IntroScreen(() => this.showNicknameScreen());
     this.uiLayer.addChild(this.introScreen);
+    this.updateScreenBackgrounds();
+  }
+
+  private showNicknameScreen() {
+    this.currentState = GameState.SCREENS;
+    this.clearScreens();
+
+    this.nicknameScreen = new NicknameScreen(
+      (nickname) => {
+        this.playerName = nickname;
+        console.log(`👤 Player set: "${this.playerName}"`);
+        this.showLevel1Intro();
+      },
+      () => this.showLeaderboard()
+    );
+    this.uiLayer.addChild(this.nicknameScreen);
+    this.updateScreenBackgrounds();
+  }
+
+  private showLeaderboard() {
+    this.currentState = GameState.SCREENS;
+    this.clearScreens();
+
+    this.leaderboardScreen = new LeaderboardScreen(() => this.showIntro());
+    this.uiLayer.addChild(this.leaderboardScreen);
     this.updateScreenBackgrounds();
   }
 
@@ -313,34 +351,47 @@ export class Game {
     this.updateScreenBackgrounds();
   }
 
-  private showVictoryScreen() {
+  // ========================================
+  // VICTORY
+  // ========================================
+
+  private async showVictoryScreen() {
     this.currentState = GameState.SCREENS;
     this.clearScreens();
+    
     const currentTimeMs = this.runEndTime;
     const timeStr = this.formatTime(currentTimeMs);
     const hintsUsed = this.totalHintsUsed;
     
-    this.resetFullGame();
+    console.log(`🏁 Victory! Time: ${currentTimeMs}ms (${timeStr}), Hints: ${hintsUsed}, Player: "${this.playerName}"`);
 
+    // 1. Get best time from DB (before saving current run)
+    const priorBest = await this.getBestTimeForPlayer(this.playerName);
+    console.log(`📊 Prior best for "${this.playerName}": ${priorBest === null ? 'none' : priorBest + 'ms'}`);
+    
+    // 2. Save current run
+    await this.saveScoreToDatabase(currentTimeMs, hintsUsed);
+    
+    // 3. Determine record status
     let bestTimeStr = timeStr;
     let isNewRecord = false;
-
-    const savedBest = localStorage.getItem('freeTheTigerBestTime');
-    if (savedBest) {
-      const bestMs = parseInt(savedBest, 10);
-      if (currentTimeMs < bestMs) {
-        isNewRecord = true;
-        localStorage.setItem('freeTheTigerBestTime', currentTimeMs.toString());
-        bestTimeStr = timeStr;
-      } else {
-        bestTimeStr = this.formatTime(bestMs);
-      }
-    } else {
+    
+    if (priorBest === null) {
       isNewRecord = true;
-      localStorage.setItem('freeTheTigerBestTime', currentTimeMs.toString());
+    } else if (currentTimeMs < priorBest) {
+      isNewRecord = true;
+      bestTimeStr = timeStr;
+    } else {
+      bestTimeStr = this.formatTime(priorBest);
     }
 
-    this.victoryScreen = new VictoryScreen(timeStr, bestTimeStr, isNewRecord, hintsUsed, () => this.showIntro());
+    this.resetFullGame();
+
+    this.victoryScreen = new VictoryScreen(
+      timeStr, bestTimeStr, isNewRecord, hintsUsed,
+      () => this.showIntro(),
+      () => this.showLeaderboard()
+    );
     this.uiLayer.addChild(this.victoryScreen);
     this.updateScreenBackgrounds();
   }
@@ -354,10 +405,76 @@ export class Game {
 
     this.audioManager.playGameOverMusic();
 
-    this.gameOverScreen = new GameOverScreen(title, message, () => this.showIntro());
+    this.gameOverScreen = new GameOverScreen(
+      title, message,
+      () => this.showIntro(),
+      () => this.showLeaderboard()
+    );
     this.uiLayer.addChild(this.gameOverScreen);
     this.updateScreenBackgrounds();
   }
+
+  // ========================================
+  // DATABASE
+  // ========================================
+
+  private async getBestTimeForPlayer(nickname: string): Promise<number | null> {
+    if (!nickname) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('time_ms')
+        .eq('nickname', nickname)
+        .order('time_ms', { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) return data[0].time_ms;
+      return null;
+    } catch (err) {
+      console.error('❌ Error fetching best time:', err);
+      return null;
+    }
+  }
+
+  private async saveScoreToDatabase(timeMs: number, hints: number) {
+    console.log('💾 Attempting to save score:', {
+      playerName: this.playerName,
+      timeMs: timeMs,
+      hints: hints
+    });
+    
+    if (!this.playerName) {
+      console.warn('❌ No player name set, skipping leaderboard save');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .insert({
+          nickname: this.playerName,
+          time_ms: timeMs,
+          hints_used: hints
+        })
+        .select();
+
+      if (error) {
+        console.error('❌ Error saving score:', error);
+        console.error('   Error details:', JSON.stringify(error, null, 2));
+      } else {
+        console.log('✅ Score saved successfully:', data);
+      }
+    } catch (err) {
+      console.error('❌ Failed to save score (exception):', err);
+    }
+  }
+
+  // ========================================
+  // HINTS
+  // ========================================
 
   private restoreDefaultHintText() {
     if (this.currentState === GameState.LEVEL_2 && this.currentLevel2Puzzle) {
@@ -442,10 +559,12 @@ export class Game {
     const bgH = screenH / uiScale;
 
     if (this.introScreen) this.introScreen.updateBackground(bgW, bgH);
+    if (this.nicknameScreen) this.nicknameScreen.updateBackground(bgW, bgH);
     if (this.levelIntro) this.levelIntro.updateBackground(bgW, bgH);
     if (this.victoryScreen) this.victoryScreen.updateBackground(bgW, bgH);
     if (this.gameOverScreen) this.gameOverScreen.updateBackground(bgW, bgH);
     if (this.hintPromptScreen) this.hintPromptScreen.updateBackground(bgW, bgH);
+    if (this.leaderboardScreen) this.leaderboardScreen.updateBackground(bgW, bgH);
   }
 
   public layout() {
@@ -513,21 +632,21 @@ export class Game {
 
     this.updateScreenBackgrounds();
 
-  if (this.signature) {
-      this.signature.x = CONFIG.LAYOUT.SIGNATURE.OFFSET_X; // <--- ПРОМЯНА: OFFSET_X вместо screenW - OFFSET_X
+    if (this.signature) {
+      this.signature.x = CONFIG.LAYOUT.SIGNATURE.OFFSET_X;
       this.signature.y = screenH - CONFIG.LAYOUT.SIGNATURE.OFFSET_Y;
     }
-    // SettingsMenu - top LEFT corner
+    
     this.settingsMenu.x = 80;
     this.settingsMenu.y = 80;
     this.settingsMenu.repositionModal();
   }
 
   // ========================================
-  // LEVEL 1
+  // LEVELS
   // ========================================
-
-   private async startLevel1() {
+  
+  private async startLevel1() {
     const currentSession = ++this.sessionId;
     this.isAnimating = true;
 
@@ -558,7 +677,6 @@ export class Game {
         const bar = this.cageObj.bars.find(b => b.id === step.barId);
         if (!bar) continue;
         
-        // NEW: Play switch sound exactly as the bar flashes
         this.audioManager.playSfxSwitch(); 
         
         await bar.flash(step.color);
@@ -596,10 +714,6 @@ export class Game {
     await wait(0.5);
     this.showLevel2Intro();
   }
-
-  // ========================================
-  // LEVEL 2
-  // ========================================
 
   private async startLevel2() {
     const currentSession = ++this.sessionId;
@@ -657,10 +771,6 @@ export class Game {
     this.showLevel3Intro();
   }
 
-  // ========================================
-  // LEVEL 3
-  // ========================================
-
   private async startLevel3() {
     const currentSession = ++this.sessionId;
     this.isAnimating = true;
@@ -707,10 +817,6 @@ export class Game {
     await this.cageObj.slamShutOpenBars();
     void this.startLevel3();
   }
-
-  // ========================================
-  // INPUT HANDLING
-  // ========================================
 
   private async handleBarClick(bar: Bar) {
     if (this.isAnimating || bar.isOpen) return;
@@ -765,10 +871,6 @@ export class Game {
     }
   }
 
-  // ========================================
-  // WIN
-  // ========================================
-
   private async triggerWin() {
     const currentSession = this.sessionId;
     this.currentState = GameState.WIN;
@@ -784,6 +886,6 @@ export class Game {
     await this.cageObj.playWinSequence();
 
     if (this.sessionId !== currentSession) return;
-    this.showVictoryScreen();
+    await this.showVictoryScreen();
   }
 }
