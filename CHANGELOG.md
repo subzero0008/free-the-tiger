@@ -15,7 +15,6 @@ This update addresses all feedback received from the code review, focusing on ga
 - **Portrait Mode Redesign:** Added an adaptive layout for mobile devices. In portrait mode, the scene zooms in, and the UI plate is moved above the cage to maximize screen space and eliminate empty areas.
 - **UI Plate Z-Index Fix:** Raised the plate's Z-index above the bars. When the left bars slide out, they now elegantly slide *behind* the plate instead of over it.
 - **Tiger Exit Animation:** Adjusted the tiger's z-index dynamically so it jumps in front of the cage and bars when freed, then slides back behind them upon reset.
-- **Developer Signature:** Added a subtle, fixed-position developer signature to the bottom right corner.
 
 ###  Architecture & Code Quality
 - **Eliminated "Magic Numbers":** Moved all hardcoded values (positions, text styles, sizes, animation timings, easing curves) into `src/config.ts`. The codebase is now easily tunable from a single location.

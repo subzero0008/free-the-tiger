@@ -4,18 +4,12 @@ import { CONFIG } from '../config';
 import { Bar } from './Bar';
 import { wait } from '../utils/wait';
 
-/**
- * Cage encapsulates the entire cage scene...
- */
 export class Cage {
   public container: Container;
   public bars: Bar[] = [];
-  
-  private tigerSprite!: Sprite;
-  private cageSprite!: Sprite;
-  private goingWildSprite!: Sprite;
-  
-  // NEW: Store the base Y position for the tiger based on the current layout
+  public tigerSprite: Sprite;
+  private cageSprite: Sprite;
+  private goingWildSprite: Sprite;
   private baseTigerY: number = CONFIG.LAYOUT.TIGER.Y;
 
   constructor() {
@@ -56,12 +50,10 @@ export class Cage {
   public setPortraitLayout(isPortrait: boolean) {
     if (isPortrait) {
       const offsetY = CONFIG.PORTRAIT.CAGE_TIGER_OFFSET_Y;
-      
-      // NEW: Update the stored base Y for portrait
       this.baseTigerY = CONFIG.LAYOUT.TIGER.Y + offsetY;
       
       this.cageSprite.y = CONFIG.LAYOUT.CAGE.Y + offsetY;
-      this.tigerSprite.y = this.baseTigerY; 
+      this.tigerSprite.y = this.baseTigerY;
       this.goingWildSprite.y = CONFIG.LAYOUT.GOING_WILD.Y + offsetY;
       
       this.bars.forEach((bar, index) => {
@@ -69,7 +61,6 @@ export class Cage {
         bar.y = CONFIG.BARS.Y_POSITIONS[rowIndex] + offsetY;
       });
     } else {
-      // NEW: Reset the stored base Y for landscape
       this.baseTigerY = CONFIG.LAYOUT.TIGER.Y;
       
       this.cageSprite.y = CONFIG.LAYOUT.CAGE.Y;
@@ -83,15 +74,30 @@ export class Cage {
     }
   }
 
-  public async playWinSequence(): Promise<void> {
-    // REMOVED: const tigerBaseY = this.tigerSprite.y;
-    // We now use this.baseTigerY which is always up-to-date.
+  // FIX: Принудително нулиране на всичко
+  public reset(): void {
+    gsap.killTweensOf(this.tigerSprite);
+    gsap.killTweensOf(this.goingWildSprite);
+    
+    this.tigerSprite.y = this.baseTigerY;
+    this.tigerSprite.scale.set(CONFIG.LAYOUT.TIGER.SCALE);
+    this.tigerSprite.zIndex = CONFIG.LAYOUT.TIGER.Z_INDEX_BACK;
+    
+    this.goingWildSprite.scale.set(0);
 
+    // Принудително затваряме баровете
+    this.bars.forEach(bar => {
+      gsap.killTweensOf(bar);
+      bar.x = (bar.id <= 3) ? CONFIG.BARS.LEFT_X : CONFIG.BARS.RIGHT_X;
+      bar.isOpen = false;
+    });
+  }
+
+  public async playWinSequence(): Promise<void> {
     await wait(CONFIG.ANIMATION.WIN_DELAY);
 
     this.tigerSprite.zIndex = CONFIG.LAYOUT.TIGER.Z_INDEX_FRONT;
     
-    // Jump forward
     await gsap.to(this.tigerSprite, { 
       y: this.baseTigerY + CONFIG.ANIMATION.WIN_TIGER_JUMP_OFFSET_Y,        
       scale: CONFIG.ANIMATION.WIN_TIGER_JUMP_SCALE,   
@@ -99,7 +105,6 @@ export class Cage {
       ease: "power2.out" 
     });
 
-    // Show "Going Wild" text
     await gsap.to(this.goingWildSprite.scale, { 
       x: CONFIG.ANIMATION.WIN_TEXT_SCALE,       
       y: CONFIG.ANIMATION.WIN_TEXT_SCALE,       
@@ -109,10 +114,8 @@ export class Cage {
     
     await wait(CONFIG.ANIMATION.WIN_WAIT_TIME);
 
-    // Reset sequence
     await gsap.to(this.goingWildSprite.scale, { x: 0, y: 0, duration: CONFIG.ANIMATION.RESET_TEXT_HIDE_DURATION });
     
-    // Move back using the always-updated baseTigerY
     await gsap.to(this.tigerSprite, { 
       y: this.baseTigerY, 
       scale: CONFIG.LAYOUT.TIGER.SCALE, 
