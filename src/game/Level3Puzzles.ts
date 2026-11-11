@@ -5,23 +5,24 @@ export interface MathPuzzle {
 }
 
 /**
- * Counts "closed circles" in a number:
- * 8 → 2 circles, 0/6/9/4 → 1 circle, others → 0.
+ * Obfuscated circle counting.
+ * Index represents the digit (0-9), value is the number of circles.
+ * Array looks like random noise, but it's the key to the puzzle!
+ * 
+ * - 0, 4, 6, 9 have 1 circle
+ * - 8 has 2 circles  
+ * - 1, 2, 3, 5, 7 have 0 circles
  */
+const CIRCLE_MAP = [1, 0, 0, 0, 1, 0, 1, 0, 2, 1];
+
 export function getCircles(num: number): number {
   let count = 0;
   for (const char of num.toString()) {
-    if (char === '8') count += 2;
-    else if (['0', '6', '9', '4'].includes(char)) count += 1;
+    count += CIRCLE_MAP[parseInt(char)];
   }
   return count;
 }
 
-/**
- * Generates 6 puzzles where each answer (1-6) appears exactly once.
- * The math sum is always > 6 so the player cannot accidentally click it
- * (bars only go up to 6).
- */
 export function generateLevel3Puzzles(): MathPuzzle[] {
   const puzzles: MathPuzzle[] = [];
   const targets = [1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5);
@@ -31,7 +32,7 @@ export function generateLevel3Puzzles(): MathPuzzle[] {
     
     while (attempts < 2000) {
       attempts++;
-      const a = Math.floor(Math.random() * 80) + 10; // 10-89
+      const a = Math.floor(Math.random() * 80) + 10;
       const needed = target - getCircles(a);
       if (needed < 0) continue;
 
@@ -44,7 +45,6 @@ export function generateLevel3Puzzles(): MathPuzzle[] {
       const b = possibleBs[Math.floor(Math.random() * possibleBs.length)];
       const sum = a + b;
 
-      // Sum must exceed 6 so player can't accidentally click it
       if (sum > 6) {
         puzzles.push({ text: `${a} + ${b} = ?`, sum, target });
         break;

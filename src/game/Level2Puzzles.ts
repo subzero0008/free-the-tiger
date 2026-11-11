@@ -1,3 +1,5 @@
+import { decode } from '../utils/Cipher';
+
 export interface ImpostorPuzzle { 
   numbers: number[]; 
   answer: number; 
@@ -5,55 +7,51 @@ export interface ImpostorPuzzle {
   directHint: string; 
 }
 
-/**
- * Each property defines the pattern the DISTRACTORS share.
- * The TARGET (impostor) does NOT satisfy the property.
- * 
- * Rule: check(n) returns TRUE for distractors, FALSE for target.
- */
 interface Property {
   check: (n: number) => boolean;
   hint: string;
   directHint: string;
 }
 
+
 const PROPERTIES: Property[] = [
   { 
-    check: (n) => n % 2 === 0, 
-    hint: "The others are always in pairs.", 
-    directHint: "Select the ODD number" 
+    
+    check: (n) => (n & 1) === 0, 
+    hint: decode("Gur bguref ner nyjnlf va cnvef."), 
+    directHint: decode("Fryrpg gur BQQ ahzore") 
   },
   { 
-    check: (n) => n % 2 === 1, 
-    hint: "The others prefer to be alone.", 
-    directHint: "Select the EVEN number" 
+    
+    check: (n) => (n & 1) === 1, 
+    hint: decode("Gur bguref cerfre gb or nybar."), 
+    directHint: decode("Fryrpg gur RIRA ahzore") 
   },
   { 
-    check: (n) => n >= 4, 
-    hint: "The others are giants.", 
-    directHint: "Select the SMALL number" 
+    
+    check: (n) => (n >> 2) >= 1, 
+    hint: decode("Gur bguref ner tvnagf."), 
+    directHint: decode("Fryrpg gur FZNYY ahzore") 
   },
   { 
-    check: (n) => n <= 3, 
-    hint: "The others are tiny.", 
-    directHint: "Select the BIG number" 
+    
+    check: (n) => (n >> 2) === 0, 
+    hint: decode("Gur bguref ner gval."), 
+    directHint: decode("Fryrpg gur OVT ahzore") 
   },
   { 
-    check: (n) => n % 3 === 0, 
-    hint: "The others can be shared among three friends.", 
-    directHint: "Select the number NOT DIVISIBLE BY 3" 
+    
+    check: (n) => n !== 1 && n !== 2 && n !== 4 && n !== 5, 
+    hint: decode("Gur bguref pna or funerq nzbat guerr sevraqf."), 
+    directHint: decode("Fryrpg gur ahzore ABG QVIVFVOYR OL 3") 
   },
   { 
-    check: (n) => n % 3 !== 0, 
-    hint: "The others cannot be shared among three friends.", 
-    directHint: "Select the number DIVISIBLE BY 3" 
+    check: (n) => [1, 2, 4, 5].includes(n), 
+    hint: decode("Gur bguref pnaabg or funerq nzbat guerr sevraqf."), 
+    directHint: decode("Fryrpg gur ahzore QVIVFVOYR OL 3") 
   },
 ];
 
-/**
- * Generates a puzzle with EXACTLY ONE correct answer.
- * Only uses unopened bars as candidates.
- */
 export function generateLevel2Puzzle(unopenedBars: number[]): ImpostorPuzzle {
   if (unopenedBars.length === 1) {
     const target = unopenedBars[0];
@@ -72,7 +70,7 @@ export function generateLevel2Puzzle(unopenedBars: number[]): ImpostorPuzzle {
     const shuffledProps = [...PROPERTIES].sort(() => Math.random() - 0.5);
     
     for (const prop of shuffledProps) {
-      // Target must NOT satisfy the property
+      // Target must NOT satisfy the property (it's the impostor)
       if (prop.check(target)) continue;
       
       // Distractors must satisfy the property
@@ -96,7 +94,7 @@ export function generateLevel2Puzzle(unopenedBars: number[]): ImpostorPuzzle {
     }
   }
 
-  // Fallback
+  
   const target = unopenedBars[0];
   return { 
     numbers: [target], 

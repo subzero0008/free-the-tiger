@@ -116,11 +116,11 @@ export class Game {
     this.root.addChild(this.puzzleDisplay);
     this.root.addChild(this.hintBubble.container);
 
-    this.signature = new Text({
+        this.signature = new Text({
       text: '© Yulian Yuriev',
       style: { fontFamily: 'Arial, sans-serif', fontSize: CONFIG.LAYOUT.SIGNATURE.FONT_SIZE, fill: 0xFFFFFF, fontWeight: 'normal' }
     });
-    this.signature.anchor.set(1, 1);
+    this.signature.anchor.set(0, 1); // <--- ПРОМЯНА: 0 вместо 1
     this.app.stage.addChild(this.signature);
 
     this.levelText = new Text({
@@ -513,11 +513,10 @@ export class Game {
 
     this.updateScreenBackgrounds();
 
-    if (this.signature) {
-      this.signature.x = screenW - CONFIG.LAYOUT.SIGNATURE.OFFSET_X;
+  if (this.signature) {
+      this.signature.x = CONFIG.LAYOUT.SIGNATURE.OFFSET_X; // <--- ПРОМЯНА: OFFSET_X вместо screenW - OFFSET_X
       this.signature.y = screenH - CONFIG.LAYOUT.SIGNATURE.OFFSET_Y;
     }
-
     // SettingsMenu - top LEFT corner
     this.settingsMenu.x = 80;
     this.settingsMenu.y = 80;
