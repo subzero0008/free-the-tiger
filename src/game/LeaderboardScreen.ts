@@ -5,7 +5,7 @@ export class LeaderboardScreen extends Container {
   private bg: Graphics;
   private listContainer: Container;
 
-  constructor(onClose: () => void) {
+  constructor(playerName: string, onClose: () => void) {
     super();
 
     // 1. Тъмен фон
@@ -35,14 +35,14 @@ export class LeaderboardScreen extends Container {
     this.addChild(this.listContainer);
 
     // 4. Зареждаме данните
-    void this.loadLeaderboard();
+    void this.loadLeaderboard(playerName);
 
     // 5. Бутон за затваряне
     const closeBtn = this.createButton('CLOSE', 0, 420, 0xFF3333, onClose);
     this.addChild(closeBtn);
   }
 
-  private async loadLeaderboard() {
+  private async loadLeaderboard(currentPlayerName: string) {
     const loadingText = new Text({
       text: 'Loading...',
       style: { fontFamily: 'Arial', fontSize: 32, fill: 0xAAAAAA, fontStyle: 'italic' }
@@ -64,13 +64,12 @@ export class LeaderboardScreen extends Container {
 
       if (error) throw error;
 
-      const header = new Text({
-        text: 'RANK   NAME               TIME      HINTS',
-        style: { fontFamily: 'Courier New', fontSize: 28, fill: 0x00FFFF, fontWeight: 'bold' }
-      });
-      header.anchor.set(0.5, 0);
-      header.y = 0;
-      this.listContainer.addChild(header);
+      // HEADER ROW (разделени на колони)
+      const headerY = 0;
+      this.createColumnText('RANK', -350, headerY, 0x00FFFF, true);
+      this.createColumnText('NAME', -150, headerY, 0x00FFFF, true);
+      this.createColumnText('TIME', 150, headerY, 0x00FFFF, true);
+      this.createColumnText('HINTS', 350, headerY, 0x00FFFF, true);
 
       if (!data || data.length === 0) {
         const emptyText = new Text({
@@ -88,23 +87,25 @@ export class LeaderboardScreen extends Container {
         const secs = Math.floor((row.time_ms % 60000) / 1000);
         const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-        const rankStr = (index + 1).toString().padStart(2, ' ');
-        const nameStr = row.nickname.substring(0, 16).padEnd(16, ' ');
-        const timeSpaced = timeStr.padStart(8, ' ');
-        const hintsStr = row.hints_used.toString().padStart(3, ' ');
+        const rankStr = `${index + 1}.`;
+        const hintsStr = row.hints_used.toString();
 
         let color = 0xFFFFFF;
         if (index === 0) color = 0xFFD700;
         else if (index === 1) color = 0xC0C0C0;
         else if (index === 2) color = 0xCD7F32;
+        
+        // Осветяваме името на текущия играч, за да го разпознава
+        const isCurrentPlayer = row.nickname === currentPlayerName;
+        const nameColor = isCurrentPlayer ? 0x00FF00 : color; // Зелено за текущия играч
 
-        const rowText = new Text({
-          text: `${rankStr}.   ${nameStr}  ${timeSpaced}     ${hintsStr}`,
-          style: { fontFamily: 'Courier New', fontSize: 28, fill: color, fontWeight: index < 3 ? 'bold' : 'normal' }
-        });
-        rowText.anchor.set(0.5, 0);
-        rowText.y = 60 + index * 48;
-        this.listContainer.addChild(rowText);
+        const rowY = 60 + index * 48;
+
+        // Разделени на колони
+        this.createColumnText(rankStr, -350, rowY, color, index < 3);
+        this.createColumnText(row.nickname, -150, rowY, nameColor, index < 3);
+        this.createColumnText(timeStr, 150, rowY, color, index < 3);
+        this.createColumnText(hintsStr, 350, rowY, color, index < 3);
       });
 
     } catch (err) {
@@ -120,6 +121,24 @@ export class LeaderboardScreen extends Container {
       errorText.y = 50;
       this.listContainer.addChild(errorText);
     }
+  }
+
+  private createColumnText(text: string, x: number, y: number, color: number, bold: boolean) {
+    const textObj = new Text({
+      text: text,
+      style: {
+        fontFamily: 'Courier New, monospace', // Monospace за подравняване
+        fontSize: 28,
+        fill: color,
+        fontWeight: bold ? 'bold' : 'normal',
+        // Добавяме padding, за да не се отрязват долните черти
+        padding: 10 
+      }
+    });
+    textObj.anchor.set(0.5, 0);
+    textObj.x = x;
+    textObj.y = y;
+    this.listContainer.addChild(textObj);
   }
 
   private createButton(label: string, x: number, y: number, color: number, onClick: () => void): Container {
@@ -141,7 +160,6 @@ export class LeaderboardScreen extends Container {
     return btn;
   }
 
-  // NEW: Този метод липсваше!
   public updateBackground(width: number, height: number) {
     this.bg.clear();
     this.bg.rect(-width / 2, -height / 2, width, height).fill({ color: 0x000000, alpha: 0.95 });

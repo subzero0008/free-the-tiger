@@ -89,8 +89,11 @@ export class Game {
     this.root = new Container();
     this.root.sortableChildren = true;
 
-    // Cleanup old broken localStorage key (from buggy v1)
     localStorage.removeItem('freeTheTigerBestTime');
+
+    // NEW: Зареждаме запазеното име от localStorage
+    this.playerName = localStorage.getItem('tiger_player_name') || '';
+    console.log(`👤 Loaded player name from localStorage: "${this.playerName}"`);
 
     this.audioManager = AudioManager.getInstance();
     this.settingsMenu = new SettingsMenu(this.app);
@@ -154,7 +157,13 @@ export class Game {
 
     this.app.ticker.add(() => this.updateTimerLoop());
 
-    this.showIntro();
+    // Проверяваме дали има запазено име
+    if (this.playerName) {
+      this.showIntro();
+    } else {
+      this.showNicknameScreen();
+    }
+    
     this.layout();
   }
 
@@ -199,7 +208,7 @@ export class Game {
   private stopTimer() {
     this.runEndTime = this.getElapsedTime(); 
     this.isTimerRunning = false;
-    console.log(`⏱️ Timer stopped at: ${this.runEndTime}ms (${this.formatTime(this.runEndTime)})`);
+    console.log(`⏱️ Timer stopped at: ${this.runEndTime}ms`);
   }
 
   private pauseTimer() {
@@ -271,12 +280,11 @@ export class Game {
     this.isAnimating = false;
     this.clearScreens();
     this.resetFullGame();
-    this.playerName = '';
 
     this.audioManager.stopAllMusic();
     this.audioManager.startRandomBgm();
 
-    this.introScreen = new IntroScreen(() => this.showNicknameScreen());
+    this.introScreen = new IntroScreen(() => this.showLevel1Intro());
     this.uiLayer.addChild(this.introScreen);
     this.updateScreenBackgrounds();
   }
@@ -288,8 +296,9 @@ export class Game {
     this.nicknameScreen = new NicknameScreen(
       (nickname) => {
         this.playerName = nickname;
-        console.log(`👤 Player set: "${this.playerName}"`);
-        this.showLevel1Intro();
+        localStorage.setItem('tiger_player_name', nickname);
+        console.log(`👤 Player set and saved: "${this.playerName}"`);
+        this.showIntro();
       },
       () => this.showLeaderboard()
     );
@@ -301,7 +310,7 @@ export class Game {
     this.currentState = GameState.SCREENS;
     this.clearScreens();
 
-    this.leaderboardScreen = new LeaderboardScreen(() => this.showIntro());
+    this.leaderboardScreen = new LeaderboardScreen(this.playerName, () => this.showIntro());
     this.uiLayer.addChild(this.leaderboardScreen);
     this.updateScreenBackgrounds();
   }
@@ -352,22 +361,22 @@ export class Game {
   }
 
   // ========================================
-  // VICTORY
+  // VICTORY & GAME OVER
   // ========================================
 
   private async showVictoryScreen() {
     this.currentState = GameState.SCREENS;
     this.clearScreens();
     
-    const currentTimeMs = this.runEndTime;
+    // FIX: Закръгляме до цяло число
+    const currentTimeMs = Math.floor(this.runEndTime); 
     const timeStr = this.formatTime(currentTimeMs);
     const hintsUsed = this.totalHintsUsed;
-    
-    console.log(`🏁 Victory! Time: ${currentTimeMs}ms (${timeStr}), Hints: ${hintsUsed}, Player: "${this.playerName}"`);
 
-    // 1. Get best time from DB (before saving current run)
+    console.log(`🏁 Victory! Time: ${currentTimeMs}ms, Hints: ${hintsUsed}, Player: "${this.playerName}"`);
+
+    // 1. Get best time from DB
     const priorBest = await this.getBestTimeForPlayer(this.playerName);
-    console.log(`📊 Prior best for "${this.playerName}": ${priorBest === null ? 'none' : priorBest + 'ms'}`);
     
     // 2. Save current run
     await this.saveScoreToDatabase(currentTimeMs, hintsUsed);
@@ -429,27 +438,26 @@ export class Game {
         .order('time_ms', { ascending: true })
         .limit(1);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching best time:', error);
+        return null;
+      }
       
       if (data && data.length > 0) return data[0].time_ms;
       return null;
     } catch (err) {
-      console.error('❌ Error fetching best time:', err);
+      console.error('❌ Exception fetching best time:', err);
       return null;
     }
   }
 
   private async saveScoreToDatabase(timeMs: number, hints: number) {
-    console.log('💾 Attempting to save score:', {
-      playerName: this.playerName,
-      timeMs: timeMs,
-      hints: hints
-    });
-    
     if (!this.playerName) {
-      console.warn('❌ No player name set, skipping leaderboard save');
+      console.warn("⚠️ No player name found, skipping leaderboard save.");
       return;
     }
+
+    console.log(`💾 Attempting to save: Name="${this.playerName}", Time=${timeMs}, Hints=${hints}`);
 
     try {
       const { data, error } = await supabase
@@ -462,10 +470,13 @@ export class Game {
         .select();
 
       if (error) {
-        console.error('❌ Error saving score:', error);
-        console.error('   Error details:', JSON.stringify(error, null, 2));
+        console.error('❌ Supabase Error saving score:');
+        console.error(`   Code: ${error.code}`);
+        console.error(`   Message: ${error.message}`);
+        console.error(`   Details: ${error.details}`);
+        console.error(`   Hint: ${error.hint}`);
       } else {
-        console.log('✅ Score saved successfully:', data);
+        console.log('✅ Score saved successfully! Data:', data);
       }
     } catch (err) {
       console.error('❌ Failed to save score (exception):', err);
