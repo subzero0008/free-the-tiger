@@ -18,62 +18,66 @@ export class NicknameScreen extends Container {
     this.bg.eventMode = 'static';
     this.addChild(this.bg);
 
+    // Заглавие (леко намалено)
     const title = new Text({
       text: 'ENTER YOUR NICKNAME',
       style: {
         fontFamily: 'Impact, Arial Black, sans-serif',
-        fontSize: 80,
+        fontSize: 60, 
         fill: 0xFFD700,
         fontWeight: 'bold',
-        stroke: { color: 0x000000, width: 8 },
+        stroke: { color: 0x000000, width: 6 },
         dropShadow: { color: 0x000000, blur: 6, distance: 5, angle: Math.PI / 2, alpha: 0.9 }
       }
     });
     title.anchor.set(0.5);
-    title.y = -280;
+    title.y = -220;
     this.addChild(title);
 
+    // Инструкции
     const instructions = new Text({
       text: 'Choose a unique nickname (3-15 characters).\nOnly letters, numbers, _ and - are allowed.',
       style: {
         fontFamily: 'Arial',
-        fontSize: 26,
+        fontSize: 20,
         fill: 0xFFFFFF,
         align: 'center',
-        lineHeight: 38,
+        lineHeight: 30,
         wordWrap: true,
-        wordWrapWidth: 900
+        wordWrapWidth: 700
       }
     });
     instructions.anchor.set(0.5);
-    instructions.y = -180;
+    instructions.y = -120;
     this.addChild(instructions);
 
-    // HTML Input
+    // HTML Input - НАМАЛЕН И RESPONSIVE
     this.inputElement = document.createElement('input');
     this.inputElement.type = 'text';
     this.inputElement.placeholder = 'Enter nickname...';
     this.inputElement.maxLength = 15;
     this.inputElement.autocomplete = 'off';
     this.inputElement.spellcheck = false;
+    
     this.inputElement.style.position = 'fixed';
     this.inputElement.style.left = '50%';
     this.inputElement.style.top = '50%';
     this.inputElement.style.transform = 'translate(-50%, -50%)';
-    this.inputElement.style.marginTop = '-30px';
-    this.inputElement.style.padding = '12px 24px';
-    this.inputElement.style.fontSize = '32px';
-    this.inputElement.style.borderRadius = '12px';
-    this.inputElement.style.border = '4px solid #000';
+    this.inputElement.style.marginTop = '-10px'; 
+    this.inputElement.style.padding = '8px 16px'; // По-малък padding
+    this.inputElement.style.fontSize = '18px'; // Значително по-малък шрифт
+    this.inputElement.style.borderRadius = '8px';
+    this.inputElement.style.border = '3px solid #000';
     this.inputElement.style.textAlign = 'center';
     this.inputElement.style.fontFamily = 'Arial, sans-serif';
-    this.inputElement.style.width = '400px';
-    this.inputElement.style.maxWidth = '80vw';
+    this.inputElement.style.width = '70vw'; // Заема 70% от ширината на екрана
+    this.inputElement.style.maxWidth = '300px'; // Но не повече от 300px на десктоп
     this.inputElement.style.zIndex = '99999';
     this.inputElement.style.outline = 'none';
     this.inputElement.style.backgroundColor = '#1a1a2e';
     this.inputElement.style.color = '#ffffff';
-    this.inputElement.style.boxShadow = '0 0 20px rgba(0, 174, 239, 0.5)';
+    this.inputElement.style.boxShadow = '0 0 15px rgba(0, 174, 239, 0.5)';
+    this.inputElement.style.boxSizing = 'border-box';
     document.body.appendChild(this.inputElement);
 
     gsap.delayedCall(0.1, () => this.inputElement.focus());
@@ -83,27 +87,27 @@ export class NicknameScreen extends Container {
       if (e.key === 'Enter') void this.handleContinue(onContinue);
     });
 
-    // Статус текст (валидация)
+    // Статус текст
     this.statusText = new Text({
       text: '',
       style: {
         fontFamily: 'Arial',
-        fontSize: 24,
+        fontSize: 18,
         fill: 0xFFFFFF,
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: 900
+        wordWrapWidth: 700
       }
     });
     this.statusText.anchor.set(0.5);
-    this.statusText.y = 60;
+    this.statusText.y = 80;
     this.addChild(this.statusText);
 
-    // Бутони (само 2, по-широки)
-    const btnContinue = this.createButton('CONTINUE', -160, 220, 0x00CC44, () => void this.handleContinue(onContinue));
+    // Бутони - ЗНАЧИТЕЛНО ПО-ГОЛЕМИ И РАЗДАЛЕЧЕНИ
+    const btnContinue = this.createButton('CONTINUE', -240, 240, 0x00CC44, () => void this.handleContinue(onContinue));
     this.addChild(btnContinue);
 
-    const btnLeaderboard = this.createButton('🏆 LEADERBOARD', 160, 220, 0xFFD700, () => {
+    const btnLeaderboard = this.createButton('🏆 LEADERBOARD', 240, 240, 0xFFD700, () => {
       this.cleanup();
       onLeaderboard();
     });
@@ -181,16 +185,15 @@ export class NicknameScreen extends Container {
     }
   }
 
+  // Увеличен размер на бутоните (420px ширина)
   private createButton(label: string, x: number, y: number, color: number, onClick: () => void): Container {
     const btn = new Container();
     const bg = new Graphics();
-    // Променена ширина от 200 на 280
-    bg.roundRect(-140, -40, 280, 80, 18).fill(color).stroke({ color: 0x000000, width: 4 });
+    bg.roundRect(-210, -50, 420, 100, 20).fill(color).stroke({ color: 0x000000, width: 4 });
     
-    // Намален шрифт от 32 на 26 за по-добро събиране
     const text = new Text({
       text: label,
-      style: { fontFamily: 'Arial', fontSize: 26, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 3 } }
+      style: { fontFamily: 'Arial', fontSize: 36, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 4 } }
     });
     
     text.anchor.set(0.5);

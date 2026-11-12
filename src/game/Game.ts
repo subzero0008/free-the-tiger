@@ -91,7 +91,7 @@ export class Game {
 
     localStorage.removeItem('freeTheTigerBestTime');
 
-    // NEW: Зареждаме запазеното име от localStorage
+    // Зареждаме запазеното име от localStorage
     this.playerName = localStorage.getItem('tiger_player_name') || '';
     console.log(`👤 Loaded player name from localStorage: "${this.playerName}"`);
 
@@ -157,12 +157,8 @@ export class Game {
 
     this.app.ticker.add(() => this.updateTimerLoop());
 
-    // Проверяваме дали има запазено име
-    if (this.playerName) {
-      this.showIntro();
-    } else {
-      this.showNicknameScreen();
-    }
+    // FIX: Винаги стартираме с Intro екран
+    this.showIntro();
     
     this.layout();
   }
@@ -284,7 +280,14 @@ export class Game {
     this.audioManager.stopAllMusic();
     this.audioManager.startRandomBgm();
 
-    this.introScreen = new IntroScreen(() => this.showLevel1Intro());
+    // FIX: Проверката за никнейм се случва след натискане на Start Game
+    this.introScreen = new IntroScreen(() => {
+      if (this.playerName) {
+        this.showLevel1Intro();
+      } else {
+        this.showNicknameScreen();
+      }
+    });
     this.uiLayer.addChild(this.introScreen);
     this.updateScreenBackgrounds();
   }
@@ -298,7 +301,7 @@ export class Game {
         this.playerName = nickname;
         localStorage.setItem('tiger_player_name', nickname);
         console.log(`👤 Player set and saved: "${this.playerName}"`);
-        this.showIntro();
+        this.showLevel1Intro();
       },
       () => this.showLeaderboard()
     );
@@ -368,20 +371,15 @@ export class Game {
     this.currentState = GameState.SCREENS;
     this.clearScreens();
     
-    // FIX: Закръгляме до цяло число
     const currentTimeMs = Math.floor(this.runEndTime); 
     const timeStr = this.formatTime(currentTimeMs);
     const hintsUsed = this.totalHintsUsed;
 
     console.log(`🏁 Victory! Time: ${currentTimeMs}ms, Hints: ${hintsUsed}, Player: "${this.playerName}"`);
 
-    // 1. Get best time from DB
     const priorBest = await this.getBestTimeForPlayer(this.playerName);
-    
-    // 2. Save current run
     await this.saveScoreToDatabase(currentTimeMs, hintsUsed);
     
-    // 3. Determine record status
     let bestTimeStr = timeStr;
     let isNewRecord = false;
     
@@ -648,8 +646,13 @@ export class Game {
       this.signature.y = screenH - CONFIG.LAYOUT.SIGNATURE.OFFSET_Y;
     }
     
-    this.settingsMenu.x = 80;
-    this.settingsMenu.y = 80;
+    // FIX: Намаляваме зъбното колелце на мобилни устройства
+    const isMobile = screenW < 768;
+    const settingsScale = isMobile ? 0.6 : 1;
+    this.settingsMenu.scale.set(settingsScale);
+    this.settingsMenu.x = isMobile ? 50 : 80;
+    this.settingsMenu.y = isMobile ? 50 : 80;
+    
     this.settingsMenu.repositionModal();
   }
 
