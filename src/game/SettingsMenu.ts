@@ -94,7 +94,6 @@ export class SettingsMenu extends Container {
   private audioManager: AudioManager;
   private app: Application;
   
-  // FIX: Add `!` to fix TypeScript strict mode errors
   private gearButton!: Container;
   private modalOverlay!: Container;
   private modalWindow!: Container;
@@ -159,7 +158,7 @@ export class SettingsMenu extends Container {
     this.modalOverlay.visible = false;
     
     const bg = new Graphics();
-    bg.rect(-2000, -2000, 4000, 4000).fill({ color: 0x000000, alpha: 0.8 });
+    bg.rect(-4000, -4000, 8000, 8000).fill({ color: 0x000000, alpha: 0.8 });
     bg.eventMode = 'static';
     bg.on('pointerdown', () => this.cancel());
     this.modalOverlay.addChild(bg);
@@ -382,10 +381,18 @@ export class SettingsMenu extends Container {
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
     
-    const scale = Math.min(1, (screenW * 0.9) / 700, (screenH * 0.9) / 500);
-    this.modalOverlay.scale.set(scale);
+    // 1. Изчисляваме идеалния мащаб за екрана
+    const idealScale = Math.min(1, (screenW * 0.9) / 700, (screenH * 0.9) / 500);
     
-    this.modalOverlay.x = (screenW / 2) - this.x;
-    this.modalOverlay.y = (screenH / 2) - this.y;
+    // 2. Взимаме мащаба на родителския контейнер (зъбното колелце)
+    const parentScaleX = this.scale.x;
+    const parentScaleY = this.scale.y;
+    
+    // 3. Прилагаме мащаба на модала, компенсирайки родителския
+    this.modalOverlay.scale.set(idealScale / parentScaleX);
+    
+    // 4. Центрираме спрямо екрана, разделяйки на мащаба на родителя
+    this.modalOverlay.x = (screenW / 2 - this.x) / parentScaleX;
+    this.modalOverlay.y = (screenH / 2 - this.y) / parentScaleY;
   }
 }
