@@ -110,12 +110,15 @@ export class Game {
     this.uiLayer = new Container();
     this.app.stage.addChild(this.uiLayer);
 
-    this.app.stage.addChild(this.settingsMenu);
-
+    // 👇 ПЪРВО СЪЗДАВАМЕ ОБЕКТИТЕ
     this.cageObj = new Cage();
     this.pipManager = new PipManager();
     this.hintBubble = new HintBubble();
     this.puzzleDisplay = new PuzzleDisplay();
+
+    // 👇 СЛЕД ТОВА ГИ ДОБАВЯМЕ КЪМ СЦЕНАТА
+    this.app.stage.addChild(this.hintBubble.container); // Hint Bubble вече е на главната сцена
+    this.app.stage.addChild(this.settingsMenu);
 
     this.plate = new Sprite(Assets.get(CONFIG.ASSETS.PLATE));
     this.plate.anchor.set(0.5);
@@ -126,7 +129,7 @@ export class Game {
     this.root.addChild(this.pipManager.container);
     this.root.addChild(this.cageObj.container);
     this.root.addChild(this.puzzleDisplay);
-    this.root.addChild(this.hintBubble.container);
+    // this.root.addChild(this.hintBubble.container); // Премахнато от тук
 
     this.signature = new Text({
       text: '© Yulian Yuriev',
@@ -601,7 +604,6 @@ export class Game {
       this.timerText.y = CONFIG.PORTRAIT.PLATE_Y - 220;
 
       this.cageObj.setPortraitLayout(true);
-      this.hintBubble.container.position.set(CONFIG.LAYOUT.CAGE.X + 260, CONFIG.PORTRAIT.PLATE_Y + 100);
       this.puzzleDisplay.position.set(CONFIG.LAYOUT.CAGE.X, CONFIG.PORTRAIT.PUZZLE_DISPLAY_Y);
     } else {
       this.plate.position.set(CONFIG.LAYOUT.PLATE.X, CONFIG.LAYOUT.PLATE.Y);
@@ -614,7 +616,6 @@ export class Game {
       this.timerText.y = CONFIG.LAYOUT.PLATE.Y - 340;
 
       this.cageObj.setPortraitLayout(false);
-      this.hintBubble.container.position.set(CONFIG.LAYOUT.HINT_BUBBLE.X, CONFIG.LAYOUT.HINT_BUBBLE.Y);
       this.puzzleDisplay.position.set(CONFIG.LAYOUT.PUZZLE_DISPLAY.X, CONFIG.LAYOUT.PUZZLE_DISPLAY.Y);
     }
 
@@ -654,6 +655,14 @@ export class Game {
     this.settingsMenu.y = isMobile ? 50 : 80;
     
     this.settingsMenu.repositionModal();
+
+    // 👇 НОВО: Позиционираме Hint Bubble симетрично на настройките (вдясно)
+    const hintScale = isMobile ? 0.6 : 1; 
+    this.hintBubble.container.scale.set(hintScale);
+    
+    // Симетрия: Ако настройките са на 50px от ляво, Hint Bubble е на 50px от дясно
+    this.hintBubble.container.x = screenW - (isMobile ? 50 : 80); 
+    this.hintBubble.container.y = isMobile ? 50 : 80;
   }
 
   // ========================================

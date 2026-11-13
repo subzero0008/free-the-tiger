@@ -9,19 +9,28 @@ export class HintBubble {
   private panel: Container;
   private textObj: Text;
   public isOpen = false;
-  public onCustomClick?: () => void; // NEW
+  public onCustomClick?: () => void;
 
   constructor() {
+    const isMobile = window.innerWidth < 768;
+
     this.container = new Container();
     this.container.zIndex = CONFIG.LAYOUT.HINT_BUBBLE.Z_INDEX;
 
     this.button = new Container();
     this.buttonBg = new Graphics();
-    this.buttonBg.circle(0, 0, 45).fill(0x00AEEF).stroke({ color: 0x000000, width: 4 });
+    
+    // Иконката е точно колкото зъбното колелце (радиус 35)
+    this.buttonBg.circle(0, 0, 35).fill(0x00AEEF).stroke({ color: 0x000000, width: 4 });
 
     const btnText = new Text({
       text: '?',
-      style: { fontFamily: 'Arial', fontSize: 58, fill: 0xFFFFFF, fontWeight: 'bold' }
+      style: { 
+        fontFamily: 'Arial', 
+        fontSize: 40, 
+        fill: 0xFFFFFF, 
+        fontWeight: 'bold' 
+      }
     });
     btnText.anchor.set(0.5);
     btnText.y = -2;
@@ -29,7 +38,12 @@ export class HintBubble {
 
     this.panel = new Container();
     const panelBg = new Graphics();
-    panelBg.roundRect(-210, -70, 420, 140, 15)
+    
+    // 👇 Леко намалена ширина (550 вместо 600), за да има отстъп от екрана
+    const panelW = isMobile ? 550 : 420;
+    const panelH = isMobile ? 200 : 140;
+    
+    panelBg.roundRect(-panelW / 2, -panelH / 2, panelW, panelH, 15)
       .fill(0xFFFFFF)
       .stroke({ color: 0x000000, width: 4 });
 
@@ -37,12 +51,13 @@ export class HintBubble {
       text: '',
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: 20,
+        fontSize: isMobile ? 40 : 20, 
         fill: 0x000000,
         fontWeight: 'bold',
         wordWrap: true,
-        wordWrapWidth: 380,
-        align: 'center'
+        wordWrapWidth: isMobile ? 500 : 380, // 👇 Съобразено с новата ширина
+        align: 'center',
+        lineHeight: isMobile ? 50 : 26 
       }
     });
     this.textObj.anchor.set(0.5);
@@ -51,7 +66,10 @@ export class HintBubble {
     this.panel.visible = false;
     this.panel.alpha = 0;
     this.panel.scale.set(0.5);
-    this.panel.y = 140;
+    
+    // 👇 ИЗМЕСТВАМЕ ПАНЕЛА ОЩЕ ПО-НАЛЯВО (-250), за да се побере на екрана
+    this.panel.x = isMobile ? -250 : -200; 
+    this.panel.y = isMobile ? 160 : 140; 
 
     this.container.addChild(this.panel, this.button);
 
