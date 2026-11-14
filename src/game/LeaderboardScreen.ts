@@ -15,7 +15,7 @@ export class LeaderboardScreen extends Container {
     this.bg.eventMode = 'static';
     this.addChild(this.bg);
 
-    // 2. Заглавие (Увеличено за мобилно)
+    // 2. Заглавие
     const title = new Text({
       text: '🏆 LEADERBOARD - TOP 10 🏆',
       style: {
@@ -28,19 +28,21 @@ export class LeaderboardScreen extends Container {
       }
     });
     title.anchor.set(0.5);
-    title.y = this.isMobile ? -700 : -380;
+    title.y = this.isMobile ? -750 : -380; 
     this.addChild(title);
 
     // 3. Контейнер за списъка
     this.listContainer = new Container();
+    // 👇 СВАЛЯМЕ СПИСЪКА НАДОЛУ (-550 вместо -750)
     this.listContainer.y = this.isMobile ? -550 : -280;
     this.addChild(this.listContainer);
 
     // 4. Зареждаме данните
     void this.loadLeaderboard(playerName);
 
-    // 5. Бутон за затваряне (Увеличен за мобилно)
-    const closeBtn = this.createButton('CLOSE', 0, this.isMobile ? 800 : 420, 0xFF3333, onClose);
+    // 5. Бутон за затваряне
+    // 👇 СВАЛЯМЕ БУТОНА НАДОЛУ (850 вместо 1050)
+    const closeBtn = this.createButton('CLOSE', 0, this.isMobile ? 850 : 420, 0xFF3333, onClose);
     this.addChild(closeBtn);
   }
 
@@ -68,7 +70,6 @@ export class LeaderboardScreen extends Container {
 
       // HEADER ROW
       const headerY = 0;
-      // Позиции на колоните (раздалечени за мобилно)
       const x1 = this.isMobile ? -850 : -350;
       const x2 = this.isMobile ? -300 : -150;
       const x3 = this.isMobile ? 300 : 150;
@@ -106,8 +107,7 @@ export class LeaderboardScreen extends Container {
         const isCurrentPlayer = row.nickname === currentPlayerName;
         const nameColor = isCurrentPlayer ? 0x00FF00 : color;
 
-        // Увеличена височина на редовете за мобилно
-        const rowY = this.isMobile ? 120 + index * 130 : 60 + index * 48;
+        const rowY = this.isMobile ? 120 + index * 100 : 60 + index * 48;
 
         this.createColumnText(rankStr, x1, rowY, color, index < 3);
         this.createColumnText(row.nickname, x2, rowY, nameColor, index < 3);
@@ -135,7 +135,7 @@ export class LeaderboardScreen extends Container {
       text: text,
       style: {
         fontFamily: 'Courier New, monospace',
-        fontSize: this.isMobile ? 65 : 28, // 👈 Много по-голям шрифт за мобилно
+        fontSize: this.isMobile ? 65 : 28,
         fill: color,
         fontWeight: bold ? 'bold' : 'normal',
         padding: 10 
