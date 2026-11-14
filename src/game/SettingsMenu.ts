@@ -107,6 +107,7 @@ export class SettingsMenu extends Container {
   
   public onOpen: () => void = () => {};
   public onClose: () => void = () => {};
+  public onQuit: () => void = () => {}; // 👈 ДОБАВЕНО: Callback за изход
 
   private tempMusicVol = 0.5;
   private tempSfxVol = 0.5;
@@ -257,10 +258,15 @@ export class SettingsMenu extends Container {
     });
     this.modalWindow.addChild(this.sfxMuteBtn);
 
-    const btnCancel = this.createButton('CANCEL', -150, 150, 0xFF3333, () => this.cancel());
-    const btnOk = this.createButton('OK', 150, 150, 0x00FF00, () => this.saveAndClose());
+    // 👇 ПРОМЯНА: Раздалечаваме бутоните и добавяме QUIT по средата
+    const btnCancel = this.createButton('CANCEL', -220, 150, 0xFF3333, () => this.cancel());
+    const btnQuit = this.createButton('QUIT', 0, 150, 0xFF8800, () => {
+      this.close();
+      this.onQuit(); // Извикваме callback-а към Game.ts
+    });
+    const btnOk = this.createButton('OK', 220, 150, 0x00FF00, () => this.saveAndClose());
     
-    this.modalWindow.addChild(btnCancel, btnOk);
+    this.modalWindow.addChild(btnCancel, btnQuit, btnOk);
 
     this.modalOverlay.addChild(this.modalWindow);
     this.addChild(this.modalOverlay);

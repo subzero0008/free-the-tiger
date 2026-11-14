@@ -89,9 +89,11 @@ export class Game {
     this.root = new Container();
     this.root.sortableChildren = true;
 
+    // 👇 ДОБАВЕНО ТУК, ЗА ДА СЕ ИЗПОЛЗВА В КОНСТРУКТОРА
+    const isMobile = window.innerWidth < 768;
+
     localStorage.removeItem('freeTheTigerBestTime');
 
-    // Зареждаме запазеното име от localStorage
     this.playerName = localStorage.getItem('tiger_player_name') || '';
     console.log(`👤 Loaded player name from localStorage: "${this.playerName}"`);
 
@@ -100,6 +102,25 @@ export class Game {
 
     this.settingsMenu.onOpen = () => this.pauseTimer();
     this.settingsMenu.onClose = () => this.resumeTimer();
+    
+    this.settingsMenu.onQuit = () => {
+      if (this.quitPromptScreen) return;
+      this.pauseTimer();
+      
+      this.quitPromptScreen = new QuitPromptScreen(
+        "Are you sure you want to quit?\n\nYour current progress will be lost.",
+        () => {
+          this.clearScreens();
+          this.triggerGameOver(CONFIG.GAME_OVER.QUIT_TITLE, CONFIG.GAME_OVER.QUIT_MESSAGE);
+        },
+        () => {
+          this.clearScreens();
+          this.resumeTimer();
+        }
+      );
+      this.uiLayer.addChild(this.quitPromptScreen);
+      this.updateScreenBackgrounds();
+    };
 
     this.bg = new Sprite(Assets.get(CONFIG.ASSETS.BG));
     this.bg.anchor.set(0.5);
@@ -110,14 +131,12 @@ export class Game {
     this.uiLayer = new Container();
     this.app.stage.addChild(this.uiLayer);
 
-    // 👇 ПЪРВО СЪЗДАВАМЕ ОБЕКТИТЕ
     this.cageObj = new Cage();
     this.pipManager = new PipManager();
     this.hintBubble = new HintBubble();
     this.puzzleDisplay = new PuzzleDisplay();
 
-    // 👇 СЛЕД ТОВА ГИ ДОБАВЯМЕ КЪМ СЦЕНАТА
-    this.app.stage.addChild(this.hintBubble.container); // Hint Bubble вече е на главната сцена
+    this.app.stage.addChild(this.hintBubble.container);
     this.app.stage.addChild(this.settingsMenu);
 
     this.plate = new Sprite(Assets.get(CONFIG.ASSETS.PLATE));
@@ -129,7 +148,6 @@ export class Game {
     this.root.addChild(this.pipManager.container);
     this.root.addChild(this.cageObj.container);
     this.root.addChild(this.puzzleDisplay);
-    // this.root.addChild(this.hintBubble.container); // Премахнато от тук
 
     this.signature = new Text({
       text: '© Yulian Yuriev',
@@ -138,9 +156,17 @@ export class Game {
     this.signature.anchor.set(0, 1);
     this.app.stage.addChild(this.signature);
 
+    // 👇 ИЗПОЛЗВА isMobile
     this.levelText = new Text({
       text: '',
-      style: { fontFamily: 'Impact, Arial Black, sans-serif', fontSize: 50, fill: 0xFFD700, fontWeight: 'bold', stroke: { color: 0x000000, width: 8 }, dropShadow: { color: 0x000000, blur: 4, distance: 4, angle: Math.PI / 2, alpha: 0.8 } }
+      style: { 
+        fontFamily: 'Impact, Arial Black, sans-serif', 
+        fontSize: isMobile ? 90 : 50, 
+        fill: 0xFFD700, 
+        fontWeight: 'bold', 
+        stroke: { color: 0x000000, width: 8 }, 
+        dropShadow: { color: 0x000000, blur: 4, distance: 4, angle: Math.PI / 2, alpha: 0.8 } 
+      }
     });
     this.levelText.anchor.set(0.5);
     this.levelText.zIndex = 100;
@@ -148,7 +174,13 @@ export class Game {
 
     this.timerText = new Text({
       text: '00:00',
-      style: { fontFamily: 'Impact, Arial Black, sans-serif', fontSize: 40, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 6 } }
+      style: { 
+        fontFamily: 'Impact, Arial Black, sans-serif', 
+        fontSize: isMobile ? 70 : 40, 
+        fill: 0xFFFFFF, 
+        fontWeight: 'bold', 
+        stroke: { color: 0x000000, width: 6 } 
+      }
     });
     this.timerText.anchor.set(0.5);
     this.timerText.zIndex = 100;
@@ -160,7 +192,6 @@ export class Game {
 
     this.app.ticker.add(() => this.updateTimerLoop());
 
-    // FIX: Винаги стартираме с Intro екран
     this.showIntro();
     
     this.layout();
@@ -269,10 +300,6 @@ export class Game {
     this.totalHintsUsed = 0;
   }
 
-  // ========================================
-  // INTRO & NICKNAME
-  // ========================================
-
   private showIntro() {
     this.currentState = GameState.SCREENS;
     this.sessionId++;
@@ -283,14 +310,18 @@ export class Game {
     this.audioManager.stopAllMusic();
     this.audioManager.startRandomBgm();
 
-    // FIX: Проверката за никнейм се случва след натискане на Start Game
-    this.introScreen = new IntroScreen(() => {
-      if (this.playerName) {
-        this.showLevel1Intro();
-      } else {
-        this.showNicknameScreen();
-      }
-    });
+    // 👇 ПРОМЯНА: Добавяме втория параметър за Leaderboard
+    this.introScreen = new IntroScreen(
+      () => {
+        if (this.playerName) {
+          this.showLevel1Intro();
+        } else {
+          this.showNicknameScreen();
+        }
+      },
+      () => this.showLeaderboard() // Извикваме метода за класацията
+    );
+    
     this.uiLayer.addChild(this.introScreen);
     this.updateScreenBackgrounds();
   }
@@ -366,10 +397,6 @@ export class Game {
     this.updateScreenBackgrounds();
   }
 
-  // ========================================
-  // VICTORY & GAME OVER
-  // ========================================
-
   private async showVictoryScreen() {
     this.currentState = GameState.SCREENS;
     this.clearScreens();
@@ -423,10 +450,6 @@ export class Game {
     this.uiLayer.addChild(this.gameOverScreen);
     this.updateScreenBackgrounds();
   }
-
-  // ========================================
-  // DATABASE
-  // ========================================
 
   private async getBestTimeForPlayer(nickname: string): Promise<number | null> {
     if (!nickname) return null;
@@ -484,14 +507,10 @@ export class Game {
     }
   }
 
-  // ========================================
-  // HINTS
-  // ========================================
-
-  private restoreDefaultHintText() {
+    private restoreDefaultHintText() {
     if (this.currentState === GameState.LEVEL_2 && this.currentLevel2Puzzle) {
       if (this.hintsRemaining === 0) {
-        this.hintBubble.setText(this.currentLevel2Puzzle.directHint);
+        this.hintBubble.setText(this.currentLevel2Puzzle.directHint); // 👈 Вече беше така
       } else {
         this.hintBubble.setText(this.currentLevel2Puzzle.hint);
       }
@@ -538,6 +557,7 @@ export class Game {
         this.hintBubble.openPanel();
         
         this.quitPromptScreen = new QuitPromptScreen(
+          "No more hints. If you want to know the answer,\ncontact the creator Yulian Yuriev.\n\nDo you want to quit?",
           () => {
             this.clearScreens();
             this.triggerGameOver(CONFIG.GAME_OVER.QUIT_TITLE, CONFIG.GAME_OVER.QUIT_MESSAGE);
@@ -577,6 +597,7 @@ export class Game {
     if (this.gameOverScreen) this.gameOverScreen.updateBackground(bgW, bgH);
     if (this.hintPromptScreen) this.hintPromptScreen.updateBackground(bgW, bgH);
     if (this.leaderboardScreen) this.leaderboardScreen.updateBackground(bgW, bgH);
+    if (this.quitPromptScreen) this.quitPromptScreen.updateBackground(bgW, bgH);
   }
 
   public layout() {
@@ -598,10 +619,12 @@ export class Game {
       this.pipManager.setPosition(CONFIG.LAYOUT.CAGE.X, CONFIG.PORTRAIT.PLATE_Y);
       
       this.levelText.x = CONFIG.LAYOUT.CAGE.X;
-      this.levelText.y = CONFIG.PORTRAIT.PLATE_Y - 300; 
+      // 👇 ВДИГАМЕ "LEVEL" ПО-НАГОРЕ (-420)
+      this.levelText.y = CONFIG.PORTRAIT.PLATE_Y - 420; 
       
       this.timerText.x = CONFIG.LAYOUT.CAGE.X;
-      this.timerText.y = CONFIG.PORTRAIT.PLATE_Y - 220;
+      // 👇 ВДИГАМЕ ТАЙМЕРА ПО-НАГОРЕ (-330)
+      this.timerText.y = CONFIG.PORTRAIT.PLATE_Y - 330;
 
       this.cageObj.setPortraitLayout(true);
       this.puzzleDisplay.position.set(CONFIG.LAYOUT.CAGE.X, CONFIG.PORTRAIT.PUZZLE_DISPLAY_Y);
@@ -647,7 +670,6 @@ export class Game {
       this.signature.y = screenH - CONFIG.LAYOUT.SIGNATURE.OFFSET_Y;
     }
     
-    // FIX: Намаляваме зъбното колелце на мобилни устройства
     const isMobile = screenW < 768;
     const settingsScale = isMobile ? 0.6 : 1;
     this.settingsMenu.scale.set(settingsScale);
@@ -656,11 +678,9 @@ export class Game {
     
     this.settingsMenu.repositionModal();
 
-    // 👇 НОВО: Позиционираме Hint Bubble симетрично на настройките (вдясно)
     const hintScale = isMobile ? 0.6 : 1; 
     this.hintBubble.container.scale.set(hintScale);
     
-    // Симетрия: Ако настройките са на 50px от ляво, Hint Bubble е на 50px от дясно
     this.hintBubble.container.x = screenW - (isMobile ? 50 : 80); 
     this.hintBubble.container.y = isMobile ? 50 : 80;
   }
@@ -773,7 +793,14 @@ export class Game {
     }
     const unopenedBars = this.cageObj.bars.filter(b => !b.isOpen).map(b => b.id);
     this.currentLevel2Puzzle = generateLevel2Puzzle(unopenedBars);
-    this.hintBubble.setText(this.currentLevel2Puzzle.hint);
+    
+    // 👇 ПРОМЯНА: Ако хинтовете са 0, веднага слагаме директния хинт
+    if (this.hintsRemaining === 0) {
+      this.hintBubble.setText(this.currentLevel2Puzzle.directHint);
+    } else {
+      this.hintBubble.setText(this.currentLevel2Puzzle.hint);
+    }
+    
     this.puzzleDisplay.showImpostorPuzzle(this.currentLevel2Puzzle.numbers, this.currentLevel2Puzzle.hint);
   }
 

@@ -1,10 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import gsap from 'gsap'; // Добавяме GSAP за анимациите
+import gsap from 'gsap';
 
-/**
- * LevelIntro is a reusable overlay that shows level information
- * (title, subtitle, instructions) with a "Ready" button before gameplay starts.
- */
 export class LevelIntro extends Container {
   private bg: Graphics;
 
@@ -28,7 +24,7 @@ export class LevelIntro extends Container {
       text: title,
       style: {
         fontFamily: 'Impact, Arial Black, sans-serif',
-        fontSize: isMobile ? 140 : 130, // Увеличено за мобилно
+        fontSize: isMobile ? 130 : 130, 
         fill: 0xFFD700,
         fontWeight: 'bold',
         stroke: { color: 0x000000, width: 10 },
@@ -36,8 +32,8 @@ export class LevelIntro extends Container {
       }
     });
     titleText.anchor.set(0.5);
-    // Начална позиция (горе) и невидимо за анимацията
-    const titleFinalY = isMobile ? -320 : -280;
+    // 👇 Качваме заглавието още по-нагоре за мобилно
+    const titleFinalY = isMobile ? -420 : -350;
     titleText.y = titleFinalY - 100; 
     titleText.alpha = 0;
     this.addChild(titleText);
@@ -47,42 +43,46 @@ export class LevelIntro extends Container {
       text: subtitle,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: isMobile ? 80 : 54, // Увеличено за мобилно
+        fontSize: isMobile ? 75 : 54, 
         fill: 0x00FFAA,
         fontWeight: 'bold',
         stroke: { color: 0x000000, width: 5 }
       }
     });
     subtitleText.anchor.set(0.5);
-    const subtitleFinalY = isMobile ? -180 : -140;
+    // 👇 Качваме подзаглавието по-нагоре
+    const subtitleFinalY = isMobile ? -300 : -230;
     subtitleText.y = subtitleFinalY - 50;
     subtitleText.alpha = 0;
     this.addChild(subtitleText);
 
-    // 4. Instructions
+  
+       // 4. Instructions
     const instructionsText = new Text({
       text: instructions,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: isMobile ? 70 : 34, // Значително по-голям шрифт
+        fontSize: isMobile ? 65 : 34, // 👈 Увеличено на 65
         fill: 0xFFFFFF,
         wordWrap: true,
-        wordWrapWidth: isMobile ? 1800 : 1300, // Почти колкото целия екран
+        wordWrapWidth: isMobile ? 1600 : 1300, 
         align: 'center',
-        lineHeight: isMobile ? 90 : 48 // По-голяма разредка за мобилно
+        lineHeight: isMobile ? 80 : 48 // 👈 Увеличена разредка
       }
     });
     instructionsText.anchor.set(0.5);
+    // 👇 Сваляме инструкциите по-надолу
     const instructionsFinalY = isMobile ? 20 : 20;
     instructionsText.y = instructionsFinalY + 50;
     instructionsText.alpha = 0;
     this.addChild(instructionsText);
 
     // 5. Ready button
-    const buttonY = isMobile ? 450 : 240; // Свалено по-надолу за мобилно
+    // 👇 Сваляме бутона още по-надолу
+    const buttonY = isMobile ? 480 : 320; 
     const button = this.createButton(buttonLabel, 0, buttonY, onReady, isMobile);
     button.alpha = 0;
-    button.scale.set(0.5); // Започва малък, за да изскочи
+    button.scale.set(0.5); 
     this.addChild(button);
 
     // Стартираме анимацията
@@ -102,52 +102,12 @@ export class LevelIntro extends Container {
   ) {
     const tl = gsap.timeline();
 
-    // 1. Заглавието пада
-    tl.to(title, {
-      y: titleFinalY,
-      alpha: 1,
-      duration: 0.8,
-      ease: 'back.out(1.2)'
-    })
-    // 2. Подзаглавието изплува
-    .to(subtitle, {
-      y: subtitleFinalY,
-      alpha: 1,
-      duration: 0.6,
-      ease: 'power2.out'
-    }, "-=0.4")
-    // 3. Текстът с инструкциите се появява
-    .to(instructions, {
-      y: instructionsFinalY,
-      alpha: 1,
-      duration: 0.6,
-      ease: 'power2.out'
-    }, "-=0.3")
-    // 4. Бутонът изскача
-    .to(button, {
-      y: buttonFinalY,
-      alpha: 1,
-      scale: 1,
-      duration: 0.6,
-      ease: 'back.out(1.5)'
-    }, "-=0.3")
-    // 5. Безкрайно "плуване" на заглавието
-    .to(title, {
-      y: titleFinalY - 15,
-      duration: 2,
-      yoyo: true,
-      repeat: -1,
-      ease: 'sine.inOut'
-    }, "+=0.2")
-    // 6. Пулсиране на бутона
-    .to(button.scale, {
-      x: 1.05,
-      y: 1.05,
-      duration: 1.5,
-      yoyo: true,
-      repeat: -1,
-      ease: 'sine.inOut'
-    }, "<");
+    tl.to(title, { y: titleFinalY, alpha: 1, duration: 0.8, ease: 'back.out(1.2)' })
+    .to(subtitle, { y: subtitleFinalY, alpha: 1, duration: 0.6, ease: 'power2.out' }, "-=0.4")
+    .to(instructions, { y: instructionsFinalY, alpha: 1, duration: 0.6, ease: 'power2.out' }, "-=0.3")
+    .to(button, { y: buttonFinalY, alpha: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' }, "-=0.3")
+    .to(title, { y: titleFinalY - 15, duration: 2, yoyo: true, repeat: -1, ease: 'sine.inOut' }, "+=0.2")
+    .to(button.scale, { x: 1.05, y: 1.05, duration: 1.5, yoyo: true, repeat: -1, ease: 'sine.inOut' }, "<");
   }
 
   private createButton(label: string, x: number, y: number, onClick: () => void, isMobile: boolean): Container {
@@ -164,7 +124,7 @@ export class LevelIntro extends Container {
       text: label,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: isMobile ? 75 : 44, // По-голям текст в бутона
+        fontSize: isMobile ? 75 : 44, 
         fill: 0xFFFFFF,
         fontWeight: 'bold',
         stroke: { color: 0x000000, width: 4 }
@@ -182,7 +142,6 @@ export class LevelIntro extends Container {
     return btn;
   }
 
-  /** Resize the background to cover the entire screen. */
   public updateBackground(width: number, height: number) {
     this.bg.clear();
     this.bg.rect(-width / 2, -height / 2, width, height).fill({ color: 0x000000, alpha: 0.92 });

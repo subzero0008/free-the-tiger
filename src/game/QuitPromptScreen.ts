@@ -3,7 +3,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 export class QuitPromptScreen extends Container {
   private bg: Graphics;
 
-  constructor(onYes: () => void, onNo: () => void) {
+  constructor(messageStr: string, onYes: () => void, onNo: () => void) {
     super();
     const isMobile = window.innerWidth < 768;
 
@@ -13,7 +13,7 @@ export class QuitPromptScreen extends Container {
     this.bg.eventMode = 'static';
     this.addChild(this.bg);
 
-    // Panel (Увеличен за мобилно)
+    // Panel
     const panelW = isMobile ? 1500 : 800;
     const panelH = isMobile ? 900 : 400;
     
@@ -23,21 +23,21 @@ export class QuitPromptScreen extends Container {
       .stroke({ color: 0xFFFFFF, width: 5 });
     this.addChild(panel);
 
-    // Message (Много по-голям шрифт и разредка за мобилно)
+    // Message
     const message = new Text({
-      text: "No more hints. If you want to know the answer,\ncontact the creator Yulian Yuriev.\n\nDo you want to quit?",
+      text: messageStr,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: isMobile ? 65 : 32, 
+        fontSize: isMobile ? 80 : 32, 
         fill: 0xFFFFFF,
         align: 'center',
-        lineHeight: isMobile ? 90 : 45,
+        lineHeight: isMobile ? 110 : 45,
         wordWrap: true,
-        wordWrapWidth: isMobile ? 1300 : 700 // За да не излиза извън екрана
+        wordWrapWidth: isMobile ? 1350 : 700 
       }
     });
     message.anchor.set(0.5);
-    message.y = isMobile ? -150 : -50; // Местим текста по-нагоре
+    message.y = isMobile ? -140 : -50; 
     this.addChild(message);
 
     // Разстояние и позиция за бутоните
@@ -56,7 +56,6 @@ export class QuitPromptScreen extends Container {
   private createButton(label: string, x: number, y: number, color: number, onClick: () => void, isMobile: boolean): Container {
     const btn = new Container();
     
-    // Увеличен размер на бутоните за мобилно
     const w = isMobile ? 450 : 240;
     const h = isMobile ? 160 : 80;
 
@@ -69,7 +68,7 @@ export class QuitPromptScreen extends Container {
       text: label,
       style: { 
         fontFamily: 'Arial, sans-serif', 
-        fontSize: isMobile ? 80 : 40, // По-голям текст в бутона
+        fontSize: isMobile ? 80 : 40, 
         fill: 0xFFFFFF, 
         fontWeight: 'bold' 
       }
@@ -84,5 +83,11 @@ export class QuitPromptScreen extends Container {
     btn.on('pointerover', () => { bg.tint = 0x888888; });
     btn.on('pointerout', () => { bg.tint = 0xFFFFFF; });
     return btn;
+  }
+
+  // 👇 ТОВА Е МЕТОДЪТ, КОЙТО ЛИПСВАШЕ
+  public updateBackground(width: number, height: number) {
+    this.bg.clear();
+    this.bg.rect(-width / 2, -height / 2, width, height).fill({ color: 0x000000, alpha: 0.8 });
   }
 }

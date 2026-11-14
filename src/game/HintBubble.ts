@@ -39,9 +39,9 @@ export class HintBubble {
     this.panel = new Container();
     const panelBg = new Graphics();
     
-    // 👇 Леко намалена ширина (550 вместо 600), за да има отстъп от екрана
-    const panelW = isMobile ? 550 : 420;
-    const panelH = isMobile ? 200 : 140;
+    // 👇 НАМАЛЕНИ РАЗМЕРИ ЗА ДЕСКТОП (беше 420x140)
+    const panelW = isMobile ? 500 : 360;
+    const panelH = isMobile ? 160 : 120;
     
     panelBg.roundRect(-panelW / 2, -panelH / 2, panelW, panelH, 15)
       .fill(0xFFFFFF)
@@ -51,13 +51,13 @@ export class HintBubble {
       text: '',
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: isMobile ? 40 : 20, 
+        fontSize: isMobile ? 32 : 20, 
         fill: 0x000000,
         fontWeight: 'bold',
         wordWrap: true,
-        wordWrapWidth: isMobile ? 500 : 380, // 👇 Съобразено с новата ширина
+        wordWrapWidth: isMobile ? 460 : 320, // 👈 По-тясно за десктоп
         align: 'center',
-        lineHeight: isMobile ? 50 : 26 
+        lineHeight: isMobile ? 45 : 28 // 👈 Леко коригирана разредка
       }
     });
     this.textObj.anchor.set(0.5);
@@ -67,9 +67,9 @@ export class HintBubble {
     this.panel.alpha = 0;
     this.panel.scale.set(0.5);
     
-    // 👇 ИЗМЕСТВАМЕ ПАНЕЛА ОЩЕ ПО-НАЛЯВО (-250), за да се побере на екрана
-    this.panel.x = isMobile ? -250 : -200; 
-    this.panel.y = isMobile ? 160 : 140; 
+    // 👇 ИЗМЕСТВАМЕ ПАНЕЛА ЗА ДЕСКТОП (беше x: -200, y: 160)
+    this.panel.x = isMobile ? -230 : -180; 
+    this.panel.y = isMobile ? 120 : 80; 
 
     this.container.addChild(this.panel, this.button);
 

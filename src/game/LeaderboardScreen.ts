@@ -4,21 +4,23 @@ import { supabase } from '../utils/supabase';
 export class LeaderboardScreen extends Container {
   private bg: Graphics;
   private listContainer: Container;
+  private isMobile: boolean;
 
   constructor(playerName: string, onClose: () => void) {
     super();
+    this.isMobile = window.innerWidth < 768;
 
     // 1. Тъмен фон
     this.bg = new Graphics();
     this.bg.eventMode = 'static';
     this.addChild(this.bg);
 
-    // 2. Заглавие
+    // 2. Заглавие (Увеличено за мобилно)
     const title = new Text({
       text: '🏆 LEADERBOARD - TOP 10 🏆',
       style: {
         fontFamily: 'Impact, Arial Black, sans-serif',
-        fontSize: 70,
+        fontSize: this.isMobile ? 140 : 70,
         fill: 0xFFD700,
         fontWeight: 'bold',
         stroke: { color: 0x000000, width: 6 },
@@ -26,29 +28,29 @@ export class LeaderboardScreen extends Container {
       }
     });
     title.anchor.set(0.5);
-    title.y = -380;
+    title.y = this.isMobile ? -700 : -380;
     this.addChild(title);
 
     // 3. Контейнер за списъка
     this.listContainer = new Container();
-    this.listContainer.y = -280;
+    this.listContainer.y = this.isMobile ? -550 : -280;
     this.addChild(this.listContainer);
 
     // 4. Зареждаме данните
     void this.loadLeaderboard(playerName);
 
-    // 5. Бутон за затваряне
-    const closeBtn = this.createButton('CLOSE', 0, 420, 0xFF3333, onClose);
+    // 5. Бутон за затваряне (Увеличен за мобилно)
+    const closeBtn = this.createButton('CLOSE', 0, this.isMobile ? 800 : 420, 0xFF3333, onClose);
     this.addChild(closeBtn);
   }
 
   private async loadLeaderboard(currentPlayerName: string) {
     const loadingText = new Text({
       text: 'Loading...',
-      style: { fontFamily: 'Arial', fontSize: 32, fill: 0xAAAAAA, fontStyle: 'italic' }
+      style: { fontFamily: 'Arial', fontSize: this.isMobile ? 80 : 32, fill: 0xAAAAAA, fontStyle: 'italic' }
     });
     loadingText.anchor.set(0.5, 0);
-    loadingText.y = 50;
+    loadingText.y = this.isMobile ? 100 : 50;
     this.listContainer.addChild(loadingText);
 
     try {
@@ -64,20 +66,26 @@ export class LeaderboardScreen extends Container {
 
       if (error) throw error;
 
-      // HEADER ROW (разделени на колони)
+      // HEADER ROW
       const headerY = 0;
-      this.createColumnText('RANK', -350, headerY, 0x00FFFF, true);
-      this.createColumnText('NAME', -150, headerY, 0x00FFFF, true);
-      this.createColumnText('TIME', 150, headerY, 0x00FFFF, true);
-      this.createColumnText('HINTS', 350, headerY, 0x00FFFF, true);
+      // Позиции на колоните (раздалечени за мобилно)
+      const x1 = this.isMobile ? -850 : -350;
+      const x2 = this.isMobile ? -300 : -150;
+      const x3 = this.isMobile ? 300 : 150;
+      const x4 = this.isMobile ? 850 : 350;
+
+      this.createColumnText('RANK', x1, headerY, 0x00FFFF, true);
+      this.createColumnText('NAME', x2, headerY, 0x00FFFF, true);
+      this.createColumnText('TIME', x3, headerY, 0x00FFFF, true);
+      this.createColumnText('HINTS', x4, headerY, 0x00FFFF, true);
 
       if (!data || data.length === 0) {
         const emptyText = new Text({
           text: 'No records yet. Be the first!',
-          style: { fontFamily: 'Arial', fontSize: 30, fill: 0xFFFFFF, fontStyle: 'italic' }
+          style: { fontFamily: 'Arial', fontSize: this.isMobile ? 80 : 30, fill: 0xFFFFFF, fontStyle: 'italic' }
         });
         emptyText.anchor.set(0.5, 0);
-        emptyText.y = 60;
+        emptyText.y = this.isMobile ? 150 : 60;
         this.listContainer.addChild(emptyText);
         return;
       }
@@ -95,17 +103,16 @@ export class LeaderboardScreen extends Container {
         else if (index === 1) color = 0xC0C0C0;
         else if (index === 2) color = 0xCD7F32;
         
-        // Осветяваме името на текущия играч, за да го разпознава
         const isCurrentPlayer = row.nickname === currentPlayerName;
-        const nameColor = isCurrentPlayer ? 0x00FF00 : color; // Зелено за текущия играч
+        const nameColor = isCurrentPlayer ? 0x00FF00 : color;
 
-        const rowY = 60 + index * 48;
+        // Увеличена височина на редовете за мобилно
+        const rowY = this.isMobile ? 120 + index * 130 : 60 + index * 48;
 
-        // Разделени на колони
-        this.createColumnText(rankStr, -350, rowY, color, index < 3);
-        this.createColumnText(row.nickname, -150, rowY, nameColor, index < 3);
-        this.createColumnText(timeStr, 150, rowY, color, index < 3);
-        this.createColumnText(hintsStr, 350, rowY, color, index < 3);
+        this.createColumnText(rankStr, x1, rowY, color, index < 3);
+        this.createColumnText(row.nickname, x2, rowY, nameColor, index < 3);
+        this.createColumnText(timeStr, x3, rowY, color, index < 3);
+        this.createColumnText(hintsStr, x4, rowY, color, index < 3);
       });
 
     } catch (err) {
@@ -115,10 +122,10 @@ export class LeaderboardScreen extends Container {
 
       const errorText = new Text({
         text: 'Failed to load leaderboard. Please try again.',
-        style: { fontFamily: 'Arial', fontSize: 30, fill: 0xFF3333 }
+        style: { fontFamily: 'Arial', fontSize: this.isMobile ? 70 : 30, fill: 0xFF3333 }
       });
       errorText.anchor.set(0.5, 0);
-      errorText.y = 50;
+      errorText.y = this.isMobile ? 150 : 50;
       this.listContainer.addChild(errorText);
     }
   }
@@ -127,11 +134,10 @@ export class LeaderboardScreen extends Container {
     const textObj = new Text({
       text: text,
       style: {
-        fontFamily: 'Courier New, monospace', // Monospace за подравняване
-        fontSize: 28,
+        fontFamily: 'Courier New, monospace',
+        fontSize: this.isMobile ? 65 : 28, // 👈 Много по-голям шрифт за мобилно
         fill: color,
         fontWeight: bold ? 'bold' : 'normal',
-        // Добавяме padding, за да не се отрязват долните черти
         padding: 10 
       }
     });
@@ -143,11 +149,20 @@ export class LeaderboardScreen extends Container {
 
   private createButton(label: string, x: number, y: number, color: number, onClick: () => void): Container {
     const btn = new Container();
+    const w = this.isMobile ? 600 : 300;
+    const h = this.isMobile ? 160 : 80;
+
     const bg = new Graphics();
-    bg.roundRect(-150, -40, 300, 80, 15).fill(color).stroke({ color: 0x000000, width: 4 });
+    bg.roundRect(-w/2, -h/2, w, h, 15).fill(color).stroke({ color: 0x000000, width: 4 });
     const text = new Text({
       text: label,
-      style: { fontFamily: 'Arial', fontSize: 32, fill: 0xFFFFFF, fontWeight: 'bold', stroke: { color: 0x000000, width: 3 } }
+      style: { 
+        fontFamily: 'Arial', 
+        fontSize: this.isMobile ? 75 : 32, 
+        fill: 0xFFFFFF, 
+        fontWeight: 'bold', 
+        stroke: { color: 0x000000, width: 3 } 
+      }
     });
     text.anchor.set(0.5);
     btn.addChild(bg, text);
